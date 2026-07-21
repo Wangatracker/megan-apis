@@ -1,32 +1,31 @@
 const https = require('https');
+const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const TYPES = [
-  'waifu', 'neko', 'shinobu', 'megumin', 'hug', 'kiss', 'cuddle', 'pat', 'slap',
-  'cry', 'smile', 'wave', 'dance', 'happy', 'blush', 'wink', 'smug', 'bonk', 'bite',
-  'poke', 'highfive', 'laugh', 'sleep', 'stare', 'baka', 'facepalm', 'yawn',
-  'nervous', 'thumbsup', 'punch'
-];
-const IMAGES_PER_TYPE = 30;
+const TYPES = ['waifu', 'neko', 'shinobu', 'megumin', 'hug', 'kiss', 'cuddle', 'pat', 'slap', 'cry', 'smile', 'wave', 'dance', 'happy', 'blush', 'wink', 'smug', 'bonk', 'bite', 'poke', 'highfive', 'laugh', 'sleep', 'stare', 'baka', 'facepalm', 'yawn', 'nervous', 'thumbsup', 'punch'];
+const IMAGES_PER_TYPE = 20;
 const OUTPUT_DIR = path.join(__dirname, '..', 'anime-images');
 
 function fetchJson(url) {
-  return new Promise((resolve) => {
-    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' } }, (res) => {
+  return new Promise((resolve, reject) => {
+    const client = url.startsWith('https') ? https : http;
+    client.get(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' } }, (res) => {
       let data = '';
       res.on('data', c => data += c);
       res.on('end', () => {
-        try { resolve(JSON.parse(data)); } catch { resolve(null); }
+        try { resolve(JSON.parse(data)); }
+        catch(e) { console.log('  Parse error:', e.message.substring(0, 50)); resolve(null); }
       });
-    }).on('error', () => resolve(null));
+    }).on('error', (e) => { console.log('  Fetch error:', e.message); resolve(null); });
   });
 }
 
 function downloadFile(url, filepath) {
   return new Promise((resolve) => {
-    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302) {
+    const client = url.startsWith('https') ? https : http;
+    client.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         downloadFile(res.headers.location, filepath).then(resolve);
         return;
       }
@@ -44,35 +43,38 @@ async function main() {
   let totalImages = 0;
 
   for (const type of TYPES) {
-    console.log(`\nCategory: ${type}`);
+    console.log(`\n${type}:`);
     const categoryDir = path.join(OUTPUT_DIR, type);
     if (!fs.existsSync(categoryDir)) fs.mkdirSync(categoryDir, { recursive: true });
 
     const urls = new Set();
 
-    // Try waifu.im (primary - works from GitHub)
-    for (let page = 0; page < 3; page++) {
-      try {
-        const data = await fetchJson(`https://api.waifu.im/search?included_tags=${type}&many=true&page=${page}`);
-        if (data?.images) {
-          for (const img of data.images) {
-            if (img.url) urls.add(img.url);
+    // Try nekos.best - test ONE to see if it works
+    const testUrl = `https://nekos.best/api/v2/${type}`;
+    console.log(`  Testing: ${testUrl}`);
+    const testData = await fetchJson(testUrl);
+    console.log(`  Result: ${testData ? 'GOT DATA' : 'NULL'}`);
+    
+    if (testData?.results) {
+      for (const r of testData.results) {
+        if (r.url) urls.add(r.url);
+      }
+      // Get more
+      for (let i = 0; i < 3; i++) {
+        const moreData = await fetchJson(`https://nekos.best/api/v2/${type}?amount=20`);
+        if (moreData?.results) {
+          for (const r of moreData.results) {
+            if (r.url) urls.add(r.url);
           }
         }
-      } catch(e) {}
+      }
     }
 
-    // Try nekos.best (fallback)
-    try {
-      const data = await fetchJson(`https://nekos.best/api/v2/${type}?amount=20`);
-      if (data?.results) {
-        for (const r of data.results) {
-          if (r.url) urls.add(r.url);
-        }
-      }
-    } catch(e) {}
+    // Try waifu.pics
+    const waifuData = await fetchJson(`https://api.waifu.pics/sfw/${type}`);
+    if (waifuData?.url) urls.add(waifuData.url);
 
-    console.log(`  Found ${urls.size} URLs`);
+    console.log(`  URLs found: ${urls.size}`);
 
     catalog[type] = [];
     let downloaded = 0;
@@ -97,11 +99,11 @@ async function main() {
         process.stdout.write('.');
       }
     }
-    console.log(`\n  Done: ${downloaded} images`);
+    console.log(`  Downloaded: ${downloaded}`);
   }
 
   fs.writeFileSync(path.join(OUTPUT_DIR, 'catalog.json'), JSON.stringify(catalog, null, 2));
-  console.log(`\nTotal: ${totalImages} images in ${Object.keys(catalog).length} categories`);
+  console.log(`\nTotal: ${totalImages} images`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
