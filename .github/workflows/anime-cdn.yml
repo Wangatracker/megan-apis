@@ -1,0 +1,42 @@
+name: Anime CDN
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Anime URLs
+        run: |
+          mkdir -p anime-cdn
+          for type in waifu neko shinobu megumin hug kiss cuddle pat slap cry smile wave dance happy blush wink smug bonk bite poke highfive laugh sleep stare baka facepalm yawn nervous thumbsup punch; do
+            echo "Fetching $type..."
+            DATA=$(curl -s "https://nekos.best/api/v2/$type?amount=20")
+            URLS=$(echo "$DATA" | python3 -c "import json,sys; d=json.load(sys.stdin); print(json.dumps([r['url'] for r in d.get('results',[]) if r.get('url')]))" 2>/dev/null)
+            if [ -n "$URLS" ] && [ "$URLS" != "[]" ]; then
+              if [ -f "anime-cdn/$type.json" ]; then
+                EXISTING=$(cat "anime-cdn/$type.json")
+                MERGED=$(python3 -c "import json; e=json.loads('$EXISTING'); n=json.loads('$URLS'); e['urls']=list(dict.fromkeys(e['urls']+n))[:200]; e['total']=len(e['urls']); e['updated']='$(date -u +%Y-%m-%dT%H:%M:%SZ)'; print(json.dumps(e))")
+                echo "$MERGED" > "anime-cdn/$type.json"
+              else
+                COUNT=$(echo "$URLS" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))")
+                echo "{\"type\":\"$type\",\"updated\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"total\":$COUNT,\"urls\":$URLS}" > "anime-cdn/$type.json"
+              fi
+              echo "  ✅ $type"
+            fi
+            sleep 1
+          done
+          python3 -c "import json,os,glob; c={}; [c.update({os.path.basename(f).replace('.json',''):json.load(open(f))}) for f in sorted(glob.glob('anime-cdn/*.json'))]; c['_total']=sum(v.get('total',0) for k,v in c.items() if not k.startswith('_')); json.dump(c,open('anime-cdn/catalog.json','w'),indent=2); print(f'Done: {c[\"_total\"]} images')"
+
+      - name: Commit
+        run: |
+          git config user.name "actions"
+          git config user.email "actions@github.com"
+          git add anime-cdn/
+          git diff --staged --quiet || git commit -m "📸 Anime CDN update" && git push
