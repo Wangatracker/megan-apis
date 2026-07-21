@@ -3,7 +3,7 @@ name: Download Anime Images
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 1 * *'  # First day of every month
+    - cron: '0 0 1 * *'
 
 jobs:
   download:
@@ -17,12 +17,12 @@ jobs:
           node-version: '20'
       
       - name: Download Anime Images
-        run: node scripts/download-anime.js
+        run: node scripts/download-anime.cjs
       
       - name: Commit and Push
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add anime-images/
-          git diff --staged --quiet || git commit -m "📸 Update anime images catalog [skip ci]"
+          git diff --staged --quiet || git commit -m "📸 Update anime images [skip ci]"
           git push
