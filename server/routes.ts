@@ -1391,6 +1391,35 @@ export async function registerRoutes(
   });
 
   // ─── ANIME ─────────────────────────────────────────────────────────────────
+  app.get("/api/anime-debug/:type", async (req, res) => {
+    try {
+      const axios = require('axios');
+      const t = req.params.type;
+      
+      // Test nekos.best
+      let nekosResult = null, nekosError = null;
+      try {
+        const r = await axios.get('https://nekos.best/api/v2/' + t, { timeout: 10000 });
+        nekosResult = { status: r.status, hasResults: !!r.data?.results, url: r.data?.results?.[0]?.url?.substring(0, 80) };
+      } catch(e) { nekosError = e.message; }
+      
+      // Test waifu.pics
+      let waifuResult = null, waifuError = null;
+      try {
+        const r = await axios.get('https://api.waifu.pics/sfw/' + t, { timeout: 10000 });
+        waifuResult = { status: r.status, hasUrl: !!r.data?.url, url: r.data?.url?.substring(0, 80) };
+      } catch(e) { waifuError = e.message; }
+      
+      return res.json({ 
+        type: t,
+        nekos: nekosResult || { error: nekosError },
+        waifu: waifuResult || { error: waifuError }
+      });
+    } catch(e: any) {
+      return res.json({ error: e.message });
+    }
+  });
+
   app.get("/api/anime/:type", async (req, res) => {
     try {
       const result = await fetchAnimeImage(req.params.type);
