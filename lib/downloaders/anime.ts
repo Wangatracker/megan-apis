@@ -1,34 +1,47 @@
 // Megan APIs — Anime Image Fetcher
-// Uses pre-fetched CDN catalog (updated every 12h by GitHub Actions)
+// Serves directly from R2 CDN — no more blocking!
 
-const CATALOG_URL = 'https://raw.githubusercontent.com/Wangatracker/megan-apis/main/anime-cdn/catalog.json';
-const FALLBACK_URL = 'https://raw.githubusercontent.com/Wangatracker/megan-apis/main/anime-cdn';
+const CDN_BASE = 'https://anime-cdn.megan.qzz.io/anime';
 
-let catalogCache: any = null;
+// How many files we have per type on R2
+const COUNTS: Record<string, number> = {
+  hug: 30, kiss: 30, slap: 30, pat: 30,
+  cry: 20, dance: 30, laugh: 30, cuddle: 7,
+  waifu: 26
+};
 
-async function getCatalog(): Promise<Record<string, { urls: string[]; updated: string }>> {
-  if (catalogCache) return catalogCache;
-  const res = await fetch(CATALOG_URL);
-  if (!res.ok) throw new Error('Catalog not available');
-  catalogCache = await res.json();
-  return catalogCache;
+// Map extensions — waifu has mixed formats
+const EXT: Record<string, string> = {
+  waifu: '' // handled per file
+};
+
+// Some waifu files have different extensions
+const WAIFU_EXTS = ['png','png','jpeg','jpg','jpg','jpg','jpeg','jpg','jpeg','jpg','jpg','jpg','jpeg','png','png','jpg','png','png','png','jpg','jpeg','jpeg','jpg','png','png','png'];
+
+function randomFile(type: string): string {
+  const max = COUNTS[type] || 20;
+  const num = Math.floor(Math.random() * max) + 1;
+  const padded = String(num).padStart(3, '0');
+  
+  if (type === 'waifu') {
+    const ext = WAIFU_EXTS[num - 1] || 'png';
+    return `${CDN_BASE}/waifu/${padded}.${ext}`;
+  }
+  
+  return `${CDN_BASE}/${type}/${padded}.gif`;
 }
 
 export async function fetchAnimeImage(type: string): Promise<{ url: string; type: string; source: string; updated: string }> {
   const t = type.toLowerCase().trim();
-  const catalog = await getCatalog();
   
-  const data = catalog[t];
-  if (!data?.urls?.length) {
-    throw new Error(`No images for "${t}"`);
+  if (!COUNTS[t]) {
+    throw new Error(`No images for "${t}". Available: ${Object.keys(COUNTS).join(', ')}`);
   }
-  
-  const randomUrl = data.urls[Math.floor(Math.random() * data.urls.length)];
-  
+
   return {
-    url: randomUrl,
+    url: randomFile(t),
     type: t,
-    source: 'nekos.best',
-    updated: data.updated
+    source: 'Megan R2 CDN',
+    updated: '2026-07-25'
   };
 }
