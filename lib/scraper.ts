@@ -1081,16 +1081,17 @@ const mp3Providers: ConvertProvider[] = [
 // MP4: ytdlpFile first (server-side local file, best quality, no IP-lock).
 // Invidious second — proxies through Invidious servers, bypasses VPS datacenter
 // IP blocks from YouTube without needing cookies.
+// MP4 providers: flvto is audio-only, skipped for video
+// ytdlpFile first — server-side local file, best quality, no IP-lock
 const mp4Providers: ConvertProvider[] = [
-  { name: "flvto",     fn: flvtoConvert },
   { name: "ytdlpFile",  fn: ytdlpFileConvert },
-  { name: "ytdown",     fn: ytdownConvert },
-  { name: "invidious",  fn: invidiousConvert },
-  { name: "ytdlp",      fn: ytdlpConvert },
   { name: "fabdl",      fn: fabdlConvert },
-  { name: "cobalt",     fn: cobaltConvert },
+  { name: "ytdown",     fn: ytdownConvert },
   { name: "piped",      fn: pipedConvert },
   { name: "y2mate",     fn: y2mateConvert },
+  { name: "invidious",  fn: invidiousConvert },
+  { name: "ytdlp",      fn: ytdlpConvert },
+  { name: "cobalt",     fn: cobaltConvert },
 ];
 
 export async function getDownloadInfo(url: string, format: "mp3" | "mp4" = "mp3") {
