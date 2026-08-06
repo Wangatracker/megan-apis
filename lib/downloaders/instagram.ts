@@ -193,7 +193,8 @@ async function tryYtdlpInstagram(url: string): Promise<InstagramResult> {
   const cookies = getInstagramCookiesArg();
   try {
     const safeUrl = url.replace(/'/g, "'\\''");
-    const cmd = `yt-dlp ${cookies} --no-warnings --dump-json --no-playlist '${safeUrl}'`;
+    const ytdlpBin = existsSync("./yt-dlp") ? "./yt-dlp" : "yt-dlp";
+    const cmd = `${ytdlpBin} ${cookies} --no-warnings --dump-json --no-playlist '${safeUrl}'`;
     const { stdout } = await execAsync(cmd, {
       timeout: 30000,
       maxBuffer: 5 * 1024 * 1024,
@@ -382,6 +383,7 @@ export async function downloadInstagram(url: string): Promise<InstagramResult> {
     { name: "cobalt",  fn: () => tryCobaltInstagram(url) },
     { name: "ytdlp",   fn: () => tryYtdlpInstagram(url) },
     { name: "graphql", fn: () => tryGraphQLApi(shortcode) },
+    { name: "snapinsta", fn: () => trySnapInsta(url) },
   ];
 
   const errors: string[] = [];
@@ -409,4 +411,30 @@ export async function downloadInstagram(url: string): Promise<InstagramResult> {
       "Could not download this Instagram post. It may be private, deleted, or temporarily unavailable.",
     details: errors.join(" | "),
   } as any;
+}
+
+// ─── Provider 4: SnapInsta (pure Node.js, no yt-dlp) ────────────────────────
+
+async function trySnapInsta(url: string): Promise<InstagramResult> {
+  try {
+    const { scrape } = await import('./snapinsta.js');
+    const results = await scrape(url);
+    if (!results || results.length === 0) {
+      return { success: false, error: 'SnapInsta returned no media' };
+    }
+    return {
+      success: true,
+      creator: 'Megan APIs v3.6.4 | Tracker Wanga | Megan Tech',
+      provider: 'snapinsta',
+      title: 'Instagram Media',
+      media: results.map((r: any) => ({
+        type: r.type || 'video',
+        url: r.url,
+        thumbnail: r.thumbnail,
+        quality: r.quality,
+      })),
+    };
+  } catch (e: any) {
+    return { success: false, error: `SnapInsta: ${e.message}` };
+  }
 }

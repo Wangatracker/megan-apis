@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "NODE_ENV=development node_modules/.bin/tsx server/index.ts",
     "build": "tsx script/build.ts",
-    "start": "NODE_ENV=production node dist/index.cjs"
+    "start": "NODE_ENV=production node dist/index.cjs",
+    "postinstall": "node -e \"const{execSync}=require('child_process');try{execSync('which yt-dlp');console.log('yt-dlp exists');}catch(e){const os=require('os');const arch=os.arch();const platform=os.platform();const url='https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux';console.log('Downloading yt-dlp...');execSync('curl -L ' + url + ' -o ./yt-dlp && chmod +x ./yt-dlp',{stdio:'inherit'});}\""
   },
   "dependencies": {
     "acorn": "^8.16.0",
