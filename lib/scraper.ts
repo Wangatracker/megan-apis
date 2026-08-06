@@ -229,7 +229,8 @@ async function ytdlpConvert(
       : "best[height<=720][ext=mp4]/best[height<=720][vcodec!=none][acodec!=none]/best[ext=mp4]/best";
 
   const cookiesArg = ytdlpCookies();
-  const cmd = `yt-dlp ${cookiesArg} --no-warnings --force-ipv4 --extractor-args "youtube:player_client=android_music,android,tv_embedded,ios,mweb,web" --socket-timeout 30 --add-header "Accept-Language:en-US,en;q=0.9" --print title -f "${formatArg}" -g "${youtubeUrl}" 2>&1`;
+  const ytdlpBin = require("fs").existsSync("./yt-dlp") ? "./yt-dlp" : "yt-dlp";
+  const cmd = `${ytdlpBin} ${cookiesArg} --no-warnings --force-ipv4 --extractor-args "youtube:player_client=android_music,android,tv_embedded,ios,mweb,web" --socket-timeout 30 --add-header "Accept-Language:en-US,en;q=0.9" --print title -f "${formatArg}" -g "${youtubeUrl}" 2>&1`;
 
   let stdout: string;
   try {
@@ -688,7 +689,7 @@ async function ytdlpSearch(query: string): Promise<{ query: string; items: any[]
     .substring(0, 200);
   const cookies = ytdlpCookies();
   const { stdout } = await execAsync(
-    `yt-dlp ${cookies} --no-warnings --flat-playlist --dump-json 'ytsearch10:${sanitized.replace(/'/g, "'\\''")}' 2>&1`,
+    `${require("fs").existsSync("./yt-dlp") ? "./yt-dlp" : "yt-dlp"} ${cookies} --no-warnings --flat-playlist --dump-json 'ytsearch10:${sanitized.replace(/'/g, "'\\''")}' 2>&1`,
     { timeout: 20000, maxBuffer: 1024 * 1024 }
   );
 
@@ -802,7 +803,7 @@ export async function checkVideo(videoId: string) {
   if (!/^[a-zA-Z0-9_-]{11}$/.test(videoId)) throw new Error("Invalid video ID");
   try {
     const { stdout } = await execAsync(
-      `yt-dlp ${ytdlpCookies()} --no-warnings --dump-json --skip-download "https://www.youtube.com/watch?v=${videoId}" 2>&1`,
+      `${require("fs").existsSync("./yt-dlp") ? "./yt-dlp" : "yt-dlp"} ${ytdlpCookies()} --no-warnings --dump-json --skip-download "https://www.youtube.com/watch?v=${videoId}" 2>&1`,
       { timeout: 15000, maxBuffer: 1024 * 1024 }
     );
     const data = JSON.parse(stdout.trim());
@@ -837,7 +838,7 @@ async function ytdlpFileConvert(
       : "best[height<=720][ext=mp4]/best[height<=720]/best[ext=mp4]/best";
 
   const cmd = [
-    `yt-dlp`,
+    `${require("fs").existsSync("./yt-dlp") ? "./yt-dlp" : "yt-dlp"}`,
     cookiesArg,
     `--no-warnings`,
     `--no-simulate`,
