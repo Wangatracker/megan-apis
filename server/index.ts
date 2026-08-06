@@ -14,34 +14,14 @@ import {
 } from "./security";
 
 function autoUpdateYtDlp() {
-  // First check if yt-dlp exists
-  exec("which yt-dlp 2>&1", { timeout: 10000 }, (whichErr, whichStdout) => {
-    if (whichErr || !whichStdout.trim()) {
-      console.log("[yt-dlp] Not found. Installing via pip...");
-      exec("pip install yt-dlp 2>&1 || pip3 install yt-dlp 2>&1", { timeout: 120000 }, (installErr, installStdout) => {
-        if (installErr) {
-          console.log("[yt-dlp] pip install failed, trying direct download...");
-          exec("curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && chmod a+rx /usr/local/bin/yt-dlp 2>&1", { timeout: 60000 }, (dlErr, dlStdout) => {
-            if (dlErr) {
-              console.log(`[yt-dlp] All install methods failed: ${dlErr.message.substring(0, 100)}`);
-            } else {
-              console.log("[yt-dlp] Installed via direct download!");
-            }
-          });
-        } else {
-          console.log("[yt-dlp] Installed via pip!");
-        }
-      });
-    } else {
-      exec("yt-dlp --update-to stable 2>&1", { timeout: 60000 }, (err, stdout) => {
-        if (err) {
-          console.log(`[yt-dlp] Update skipped: ${err.message.substring(0, 100)}`);
-          return;
-        }
-        console.log(`[yt-dlp] Updated: ${stdout.trim().split("\n")[0] || "done"}`);
-      });
-    }
-  });
+  const { existsSync } = require("fs");
+  if (existsSync("./yt-dlp")) {
+    console.log("[yt-dlp] Found local binary (./yt-dlp) — ready");
+  } else if (existsSync("/usr/bin/yt-dlp") || existsSync("/usr/local/bin/yt-dlp")) {
+    console.log("[yt-dlp] Found system binary — ready");
+  } else {
+    console.log("[yt-dlp] Not found — will use Node.js fallbacks (SnapInsta, GraphQL)");
+  }
 }
 
 const app = express();
