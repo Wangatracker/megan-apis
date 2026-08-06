@@ -194,7 +194,7 @@ async function tryYtdlpInstagram(url: string): Promise<InstagramResult> {
   try {
     const safeUrl = url.replace(/'/g, "'\\''");
     const ytdlpBin = existsSync("./yt-dlp") ? "./yt-dlp" : "yt-dlp";
-    const cmd = `${ytdlpBin} ${cookies} --no-warnings --dump-json --no-playlist '${safeUrl}'`;
+    const cmd = `${ytdlpBin} ${cookies} --no-warnings --dump-json --no-playlist -f "bv*+ba/b" '${safeUrl}'`;
     const { stdout } = await execAsync(cmd, {
       timeout: 30000,
       maxBuffer: 5 * 1024 * 1024,
@@ -210,9 +210,11 @@ async function tryYtdlpInstagram(url: string): Promise<InstagramResult> {
         const data = JSON.parse(line);
         title = title || data.title || data.description || "Instagram Media";
         username = username || data.uploader || data.channel || "";
-        const mediaUrl =
-          data.url ||
-          (data.formats && data.formats[data.formats.length - 1]?.url);
+        // Prefer merged video+audio format, fall back to best single format
+        const formats = data.formats || [];
+        const mergedFormat = formats.find((f: any) => f.acodec !== 'none' && f.vcodec !== 'none');
+        const bestFormat = mergedFormat || formats[formats.length - 1];
+        const mediaUrl = bestFormat?.url || data.url;
         if (mediaUrl) {
           const isVideo =
             (data.ext && data.ext !== "jpg" && data.ext !== "png") ||
