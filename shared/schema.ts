@@ -1064,8 +1064,6 @@ export const allNewEndpoints: ApiEndpoint[] = [
 ];
 
 export const allEndpointsComplete: ApiEndpoint[] = [
-  ...mediaStreamingEndpoints,
-  ...workingAIEndpoints,
   ...allEndpoints,
   ...allNewEndpoints,
 ];
