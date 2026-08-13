@@ -1,0 +1,56 @@
+{
+  "timestamp": "2026-08-13T08:04:24.748Z",
+  "working": [],
+  "failed": [
+    {
+      "id": "black-forest-labs/FLUX.1-schnell",
+      "name": "FLUX.1 Schnell",
+      "reason": "fetch failed"
+    },
+    {
+      "id": "stabilityai/stable-diffusion-xl-base-1.0",
+      "name": "SDXL 1.0",
+      "reason": "fetch failed"
+    },
+    {
+      "id": "runwayml/stable-diffusion-v1-5",
+      "name": "SD 1.5",
+      "reason": "fetch failed"
+    },
+    {
+      "id": "stabilityai/stable-diffusion-2-1",
+      "name": "SD 2.1",
+      "reason": "fetch failed"
+    },
+    {
+      "id": "prompthero/openjourney",
+      "name": "OpenJourney",
+      "reason": "fetch failed"
+    },
+    {
+      "id": "dreamlike-art/dreamlike-diffusion-1.0",
+      "name": "Dreamlike Diffusion",
+      "reason": "fetch failed"
+    },
+    {
+      "id": "stabilityai/stable-diffusion-2",
+      "name": "SD 2.0",
+      "reason": "fetch failed"
+    },
+    {
+      "id": "CompVis/stable-diffusion-v1-4",
+      "name": "SD 1.4",
+      "reason": "fetch failed"
+    },
+    {
+      "id": "hakurei/waifu-diffusion",
+      "name": "Waifu Diffusion",
+      "reason": "fetch failed"
+    },
+    {
+      "id": "stabilityai/stable-diffusion-xl-refiner-1.0",
+      "name": "SDXL Refiner",
+      "reason": "fetch failed"
+    }
+  ]
+}

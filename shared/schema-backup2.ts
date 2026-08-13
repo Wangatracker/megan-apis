@@ -869,21 +869,6 @@ const metaEndpoints: ApiEndpoint[] = [
 ];
 
 
-
-const workingAIEndpoints: ApiEndpoint[] = [
-  { path: "/api/ai/chat/claude", method: "GET", description: "Chat with Claude Haiku 4.5 (working)", params: Q_PARAM, format: "json", category: "ai-chat", provider: "Overchat.ai" },
-  { path: "/api/ai/chat/gpt5", method: "GET", description: "Chat with GPT-4.1 Nano (working)", params: Q_PARAM, format: "json", category: "ai-chat", provider: "Overchat.ai" },
-  { path: "/api/ai/chat/deepseek", method: "GET", description: "Chat with DeepSeek V3.2 (working)", params: Q_PARAM, format: "json", category: "ai-chat", provider: "Overchat.ai" },
-  { path: "/api/ai/chat/normal", method: "GET", description: "Chat with NoTrack.ai normal persona", params: Q_PARAM, format: "json", category: "ai-chat", provider: "NoTrack.ai" },
-  { path: "/api/ai/chat/concise", method: "GET", description: "Chat with NoTrack.ai concise persona", params: Q_PARAM, format: "json", category: "ai-chat", provider: "NoTrack.ai" },
-  { path: "/api/ai/chat/detailed", method: "GET", description: "Chat with NoTrack.ai detailed persona", params: Q_PARAM, format: "json", category: "ai-chat", provider: "NoTrack.ai" },
-  { path: "/api/ai/chat/creative", method: "GET", description: "Chat with NoTrack.ai creative persona", params: Q_PARAM, format: "json", category: "ai-chat", provider: "NoTrack.ai" },
-  { path: "/api/ai/image/flux", method: "GET", description: "Generate AI image using FLUX model", params: [{ name: "prompt", type: "string", required: true, description: "Image prompt", default: "beautiful sunset" }, { name: "width", type: "number", required: false, description: "Width (default 512)", default: "512" }, { name: "height", type: "number", required: false, description: "Height (default 512)", default: "512" }], format: "json", category: "ai-image", provider: "Pollinations.ai" },
-  { path: "/api/ai/image/sdxl", method: "GET", description: "Generate AI image using SDXL model", params: [{ name: "prompt", type: "string", required: true, description: "Image prompt", default: "cyberpunk city" }, { name: "width", type: "number", required: false, description: "Width", default: "512" }, { name: "height", type: "number", required: false, description: "Height", default: "512" }], format: "json", category: "ai-image", provider: "Pollinations.ai" },
-  { path: "/api/ai/image/turbo", method: "GET", description: "Generate AI image using Turbo model (fast)", params: [{ name: "prompt", type: "string", required: true, description: "Image prompt", default: "dragon" }, { name: "width", type: "number", required: false, description: "Width", default: "512" }, { name: "height", type: "number", required: false, description: "Height", default: "512" }], format: "json", category: "ai-image", provider: "Pollinations.ai" },
-  { path: "/api/ai/video/generate", method: "POST", description: "Generate video from text (unlimited with device rotation)", params: [{ name: "prompt", type: "string", required: true, description: "Video prompt", default: "a cat playing piano" }, { name: "aspect_ratio", type: "string", required: false, description: "Aspect ratio (auto, 1:1, 16:9, 9:16)", default: "auto" }, { name: "ai_sound", type: "boolean", required: false, description: "Add AI sound/voice", default: "true" }], format: "json", category: "ai-tools", provider: "TXT2VI" },
-];
-
 const mediaStreamingEndpoints: ApiEndpoint[] = [
   { path: "/v1/seegore/home", method: "GET", description: "Get latest videos from SeeGore with direct MP4 links", params: [], format: "json", category: "media", provider: "SeeGore" },
   { path: "/v1/seegore/search", method: "GET", description: "Search SeeGore videos by keyword", params: [{ name: "q", type: "string", required: true, description: "Search query", default: "accident" }], format: "json", category: "media", provider: "SeeGore" },
@@ -898,7 +883,6 @@ const mediaStreamingEndpoints: ApiEndpoint[] = [
 
 export const allEndpoints: ApiEndpoint[] = [
   ...mediaStreamingEndpoints,
-  ...workingAIEndpoints,
   ...aiChatEndpoints,
   ...aiToolEndpoints,
   ...aiImageEndpoints,
@@ -1065,7 +1049,6 @@ export const allNewEndpoints: ApiEndpoint[] = [
 
 export const allEndpointsComplete: ApiEndpoint[] = [
   ...mediaStreamingEndpoints,
-  ...workingAIEndpoints,
   ...allEndpoints,
   ...allNewEndpoints,
 ];

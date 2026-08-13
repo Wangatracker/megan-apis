@@ -1,0 +1,85 @@
+{
+  "timestamp": "2026-08-13T07:26:07.037Z",
+  "working": [
+    {
+      "name": "AI Vision - Greet",
+      "url": "https://aiv1.clemy.top/greet",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "name": "AI Vision - OpenAPI Spec",
+      "url": "https://aiv1.clemy.top/openapi.json",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "name": "AI Vision - Vision Models",
+      "url": "https://aiv1.clemy.top/vision-models",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "name": "Mimo - Models List",
+      "url": "https://apps.clemy.top/ai/mimo/models.json",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "name": "Pollinations - Image Generation",
+      "url": "https://image.pollinations.ai/prompt/test?width=100&height=100&nologo=true",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "name": "HuggingFace - WhoAmI",
+      "url": "https://huggingface.co/api/whoami-v2",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "name": "HuggingFace - Models List",
+      "url": "https://huggingface.co/api/models?limit=5",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "name": "AI Chat - Free API",
+      "url": "https://free.churchless.tech/v1/chat/completions",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "name": "Temp Email - Create",
+      "url": "https://creatett-seven.vercel.app/api/tempmail/create",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "name": "Bria AI - Background Removal",
+      "url": "https://briaai-bria-rmbg-2-0.hf.space",
+      "method": "GET",
+      "status": 200
+    }
+  ],
+  "failed": [
+    {
+      "name": "Pollinations - Text Generation",
+      "url": "https://text.pollinations.ai/test",
+      "method": "POST",
+      "status": 404
+    },
+    {
+      "name": "DeepAI - Text Generation",
+      "url": "https://api.deepai.org/api/text-generator",
+      "method": "POST",
+      "status": "N/A"
+    },
+    {
+      "name": "ImgUpscaler - API",
+      "url": "https://api.imgupscaler.ai",
+      "method": "GET",
+      "status": 404
+    }
+  ]
+}

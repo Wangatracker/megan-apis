@@ -1,0 +1,131 @@
+{
+  "timestamp": "2026-08-13T08:07:35.204Z",
+  "working": [],
+  "failed": [
+    {
+      "id": "stabilityai/sd-x2-latent-upscaler",
+      "name": "SD Upscaler",
+      "reason": "timeout"
+    },
+    {
+      "id": "stabilityai/stable-diffusion-2-1-base",
+      "name": "SD 2.1 Base",
+      "reason": "timeout"
+    },
+    {
+      "id": "stabilityai/stable-diffusion-2-base",
+      "name": "SD 2.0 Base",
+      "reason": "timeout"
+    },
+    {
+      "id": "segmind/SSD-1B",
+      "name": "SSD-1B (Fast SDXL)",
+      "reason": "timeout"
+    },
+    {
+      "id": "segmind/small-sd",
+      "name": "Small SD",
+      "reason": "timeout"
+    },
+    {
+      "id": "stabilityai/sdxl-turbo",
+      "name": "SDXL Turbo",
+      "reason": "timeout"
+    },
+    {
+      "id": "stabilityai/sd-turbo",
+      "name": "SD Turbo",
+      "reason": "timeout"
+    },
+    {
+      "id": "latent-consistency/lcm-lora-sdxl",
+      "name": "LCM SDXL",
+      "reason": "timeout"
+    },
+    {
+      "id": "latent-consistency/lcm-lora-sdv1-5",
+      "name": "LCM SD 1.5",
+      "reason": "timeout"
+    },
+    {
+      "id": "kandinsky-community/kandinsky-2-2-decoder",
+      "name": "Kandinsky 2.2",
+      "reason": "timeout"
+    },
+    {
+      "id": "microsoft/phi-2",
+      "name": "Phi-2",
+      "reason": "timeout"
+    },
+    {
+      "id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+      "name": "TinyLlama",
+      "reason": "timeout"
+    },
+    {
+      "id": "google/gemma-2b-it",
+      "name": "Gemma 2B",
+      "reason": "timeout"
+    },
+    {
+      "id": "microsoft/Phi-3-mini-4k-instruct",
+      "name": "Phi-3 Mini",
+      "reason": "timeout"
+    },
+    {
+      "id": "microsoft/Phi-3.5-mini-instruct",
+      "name": "Phi-3.5",
+      "reason": "timeout"
+    },
+    {
+      "id": "HuggingFaceH4/zephyr-7b-beta",
+      "name": "Zephyr 7B",
+      "reason": "timeout"
+    },
+    {
+      "id": "mistralai/Mistral-7B-Instruct-v0.2",
+      "name": "Mistral 7B",
+      "reason": "timeout"
+    },
+    {
+      "id": "meta-llama/Llama-3.2-1B-Instruct",
+      "name": "Llama 3.2 1B",
+      "reason": "timeout"
+    },
+    {
+      "id": "meta-llama/Llama-3.2-3B-Instruct",
+      "name": "Llama 3.2 3B",
+      "reason": "timeout"
+    },
+    {
+      "id": "Qwen/Qwen2.5-0.5B-Instruct",
+      "name": "Qwen 0.5B",
+      "reason": "timeout"
+    },
+    {
+      "id": "Qwen/Qwen2.5-1.5B-Instruct",
+      "name": "Qwen 1.5B",
+      "reason": "timeout"
+    },
+    {
+      "id": "Qwen/Qwen2.5-3B-Instruct",
+      "name": "Qwen 3B",
+      "reason": "timeout"
+    },
+    {
+      "id": "openai-community/gpt2",
+      "name": "GPT-2",
+      "reason": "timeout"
+    },
+    {
+      "id": "distilbert/distilgpt2",
+      "name": "DistilGPT-2",
+      "reason": "timeout"
+    },
+    {
+      "id": "facebook/opt-350m",
+      "name": "OPT 350M",
+      "reason": "timeout"
+    }
+  ]
+}
