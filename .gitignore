@@ -27,3 +27,10 @@ npm-debug.log*
 /tmp/
 *.tmp
 .vercel
+
+# Test files with secrets
+*test*.cjs
+*test*.js
+aigacor.cjs
+endpoint-collector.cjs
+unified-ai.cjs
