@@ -79,7 +79,7 @@ export function registerMovieRoutes(app: Express): void {
 
   // ============ SEEGORE ROUTES (Direct MP4) ============
 
-  app.get('/v1/seegore/home', async (_req: Request, res: Response) => {
+  app.get('/api/v1/seegore/home', async (_req: Request, res: Response) => {
     try {
       const html = await seegoreGet(`${SEEGORE_BASE}/gore/`);
       const $ = cheerio.load(html);
@@ -112,7 +112,7 @@ export function registerMovieRoutes(app: Express): void {
     }
   });
 
-  app.get('/v1/seegore/search', async (req: Request, res: Response) => {
+  app.get('/api/v1/seegore/search', async (req: Request, res: Response) => {
     const q = req.query.q as string;
     if (!q) return res.status(400).json({ success: false, error: "Parameter 'q' required" });
     
@@ -145,7 +145,7 @@ export function registerMovieRoutes(app: Express): void {
     }
   });
 
-  app.get('/v1/seegore/watch', async (req: Request, res: Response) => {
+  app.get('/api/v1/seegore/watch', async (req: Request, res: Response) => {
     const url = req.query.url as string;
     if (!url) return res.status(400).json({ success: false, error: "Parameter 'url' required" });
     
@@ -196,7 +196,7 @@ export function registerMovieRoutes(app: Express): void {
 
   // ============ LK21 ROUTES (Movies) ============
 
-  app.get('/v1/movie/home', async (_req: Request, res: Response) => {
+  app.get('/api/v1/movie/home', async (_req: Request, res: Response) => {
     try {
       const html = await lk21Get(`${LK21_BASE}/`);
       const $ = cheerio.load(html);
@@ -226,7 +226,7 @@ export function registerMovieRoutes(app: Express): void {
     }
   });
 
-  app.get('/v1/movie/detail', async (req: Request, res: Response) => {
+  app.get('/api/v1/movie/detail', async (req: Request, res: Response) => {
     const url = req.query.url as string;
     if (!url) return res.status(400).json({ success: false, error: "Parameter 'url' required" });
     
@@ -266,7 +266,7 @@ export function registerMovieRoutes(app: Express): void {
     }
   });
 
-  app.get('/v1/movie/stream', async (req: Request, res: Response) => {
+  app.get('/api/v1/movie/stream', async (req: Request, res: Response) => {
     const url = req.query.url as string;
     if (!url) return res.status(400).json({ success: false, error: "Parameter 'url' required" });
     
@@ -296,7 +296,7 @@ export function registerMovieRoutes(app: Express): void {
 
   // ============ TOKUSATSU ROUTES ============
 
-  app.get('/v1/tokusatsu/home', async (_req: Request, res: Response) => {
+  app.get('/api/v1/tokusatsu/home', async (_req: Request, res: Response) => {
     try {
       const html = await tokusatsuGet(`${TOKUSATSU_BASE}/`);
       const $ = cheerio.load(html);
@@ -327,7 +327,7 @@ export function registerMovieRoutes(app: Express): void {
     }
   });
 
-  app.get('/v1/tokusatsu/search', async (req: Request, res: Response) => {
+  app.get('/api/v1/tokusatsu/search', async (req: Request, res: Response) => {
     const q = req.query.q as string;
     if (!q) return res.status(400).json({ success: false, error: "Parameter 'q' required" });
     
@@ -355,7 +355,7 @@ export function registerMovieRoutes(app: Express): void {
     }
   });
 
-  app.get('/v1/tokusatsu/watch', async (req: Request, res: Response) => {
+  app.get('/api/v1/tokusatsu/watch', async (req: Request, res: Response) => {
     const url = req.query.url as string;
     if (!url) return res.status(400).json({ success: false, error: "Parameter 'url' required" });
     
