@@ -914,6 +914,14 @@ const v2DownloadEndpoints: ApiEndpoint[] = [
 ];
 
 
+
+const imageProcessEndpoints: ApiEndpoint[] = [
+  { path: "/api/v2/image/blurface", method: "GET", description: "Blur faces in an image for privacy", params: [{ name: "image", type: "string", required: true, description: "Image URL", default: "https://example.com/image.jpg" }], format: "image", category: "tools", provider: "iLoveIMG" },
+  { path: "/api/v2/image/compress", method: "GET", description: "Compress image file size", params: [{ name: "image", type: "string", required: true, description: "Image URL", default: "https://example.com/image.jpg" }], format: "image", category: "tools", provider: "iLoveIMG" },
+  { path: "/api/v2/image/removebg", method: "GET", description: "Remove image background", params: [{ name: "image", type: "string", required: true, description: "Image URL", default: "https://example.com/image.jpg" }], format: "image", category: "tools", provider: "iLoveIMG" },
+  { path: "/api/v2/image/upscale", method: "GET", description: "Upscale image 2x/4x", params: [{ name: "image", type: "string", required: true, description: "Image URL", default: "https://example.com/image.jpg" }], format: "image", category: "tools", provider: "iLoveIMG" },
+];
+
 const movieboxEndpoints: ApiEndpoint[] = [
   { path: "/api/v2/search/moviebox", method: "GET", description: "Search movies and TV shows on Moviebox", params: [{ name: "q", type: "string", required: true, description: "Search keyword", default: "avatar" }], format: "json", category: "search", provider: "Moviebox" },
   { path: "/api/v2/moviebox/home", method: "GET", description: "Get Moviebox homepage content", params: [], format: "json", category: "media", provider: "Moviebox" },
@@ -953,6 +961,7 @@ export const allEndpoints: ApiEndpoint[] = [
   ...v2Endpoints,
   ...v2DownloadEndpoints,
   ...movieboxEndpoints,
+  ...imageProcessEndpoints,
   ...aiChatEndpoints,
   ...aiToolEndpoints,
   ...aiImageEndpoints,
