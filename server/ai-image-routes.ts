@@ -122,7 +122,7 @@ export function registerAIImageRoutes(app: Express): void {
   });
 
   // MagicStudio AI Art (returns base64)
-  app.get("/v1/ai/image/magicstudio", async (req: Request, res: Response) => {
+  app.get("/api/v1/ai/image/magicstudio", async (req: Request, res: Response) => {
     const prompt = (req.query.prompt || req.query.q) as string;
     if (!prompt) return res.status(400).json({ success: false, error: "Parameter 'prompt' required" });
 
@@ -142,7 +142,7 @@ export function registerAIImageRoutes(app: Express): void {
   });
 
   // MagicStudio POST
-  app.post("/v1/ai/image/magicstudio", async (req: Request, res: Response) => {
+  app.post("/api/v1/ai/image/magicstudio", async (req: Request, res: Response) => {
     const { prompt } = req.body || {};
     if (!prompt) return res.status(400).json({ success: false, error: "Parameter 'prompt' required" });
 
@@ -165,6 +165,6 @@ export function registerAIImageRoutes(app: Express): void {
   console.log("  GET /api/ai/image/flux - FLUX (Pollinations)");
   console.log("  GET /api/ai/image/sdxl - SDXL (Pollinations)");
   console.log("  GET /api/ai/image/turbo - Turbo (Pollinations)");
-  console.log("  GET /v1/ai/image/magicstudio - MagicStudio AI Art");
+  console.log("  GET /api/v1/ai/image/magicstudio - MagicStudio AI Art");
   console.log("  POST /v1/ai/image/magicstudio - MagicStudio AI Art (POST)");
 }
