@@ -70,13 +70,12 @@ class MovieboxClient {
     return this.token;
   }
 
-  async request(path: string, method: 'GET' | 'POST' = 'GET', body?: any, extraHeaders: any = {}) {
+  async request(path: string, method: 'GET' | 'POST' = 'GET', body?: any) {
     const token = await this.getToken();
     const headers = {
       'User-Agent': MOVIEBOX_UA,
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
-      ...extraHeaders
     };
 
     const config: any = { timeout: 20000, headers };
@@ -111,36 +110,18 @@ class MovieboxClient {
     return this.request(`/wefeed-h5api-bff/detail?detailPath=${detailPath}`);
   }
 
-  async discoverDomain(): Promise<string> {
-    try {
-      const response = await axios.get(`${MOVIEBOX_BASE}/wefeed-h5api-bff/media-player/get-domain`, {
-        timeout: 10000,
-        headers: {
-          'User-Agent': MOVIEBOX_UA,
-          'X-Client-Type': 'h5',
-        }
-      });
-      if (response.data?.data) {
-        return response.data.data.replace(/\/+$/, '');
-      }
-    } catch {}
-    return 'https://123movienow.cc';
-  }
-
   async getStream(subjectId: string, detailPath: string, se = 0, ep = 0) {
-    const domain = await this.discoverDomain();
+    const slug = detailPath.split('/').filter(Boolean).pop() || detailPath;
     const token = await this.getToken();
 
-    const response = await axios.get(`${domain}/wefeed-h5api-bff/subject/play`, {
+    const response = await axios.get(`${MOVIEBOX_PLAY}/wefeed-h5api-bff/subject/play`, {
       timeout: 20000,
       headers: {
         'User-Agent': MOVIEBOX_UA,
-        'Accept': 'application/json',
-        'Referer': `${domain}/spa/videoPlayPage/movies/${detailPath}`,
-        'X-Client-Info': '{"timezone":"Asia/Jakarta"}',
-        'Cookie': 'uuid=d8c3539e-2e46-4000-af20-7046a856e30a',
+        'Authorization': `Bearer ${token}`,
+        'Referer': `${MOVIEBOX_PLAY}/movies/${slug}`,
       },
-      params: { subjectId, se, ep, detailPath }
+      params: { subjectId, se, ep, detailPath, streamSignType: 1 }
     });
 
     return response.data;
@@ -218,7 +199,6 @@ export function registerMovieboxRoutes(app: Express): void {
         parseInt(ep as string) || 0
       );
 
-      // Add proxied URLs to each stream
       if (result.data?.streams) {
         const host = req.headers.host || 'apis.megan.qzz.io';
         const protocol = req.headers['x-forwarded-proto'] || 'https';
@@ -257,48 +237,6 @@ export function registerMovieboxRoutes(app: Express): void {
     });
   });
 
-  // Stream Proxy (streams video through our server)
-  app.get('/api/v2/moviebox/proxy', async (req: Request, res: Response) => {
-    const url = req.query.url as string;
-    if (!url) return res.status(400).json({ status: false, error: "Parameter 'url' required" });
-
-    try {
-      const token = await moviebox.getToken();
-
-      const domain = await moviebox.discoverDomain();
-      
-      const response = await axios.get(url, {
-        timeout: 30000,
-        responseType: 'stream',
-        headers: {
-          'User-Agent': MOVIEBOX_UA,
-          'Referer': `${domain}/`,
-          'Origin': domain,
-          'Accept': '*/*',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Cookie': 'uuid=d8c3539e-2e46-4000-af20-7046a856e30a',
-        },
-      });
-
-      res.setHeader('Content-Type', 'video/mp4');
-      res.setHeader('Content-Length', response.headers['content-length'] || '');
-      res.setHeader('Accept-Ranges', 'bytes');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-
-      response.data.pipe(res);
-
-      response.data.on('error', (error: any) => {
-        if (!res.headersSent) {
-          res.status(500).json({ status: false, error: error.message });
-        }
-      });
-
-    } catch (e: any) {
-      return res.status(500).json({ status: false, error: e.message });
-    }
-  });
-
   console.log("✅ Moviebox Routes Registered:");
   console.log("  GET /api/v2/search/moviebox");
   console.log("  GET /api/v2/moviebox/home");
@@ -306,5 +244,4 @@ export function registerMovieboxRoutes(app: Express): void {
   console.log("  GET /api/v2/moviebox/detail");
   console.log("  GET /api/v2/moviebox/stream");
   console.log("  GET /api/v2/moviebox/ranking");
-  console.log("  GET /api/v2/moviebox/proxy");
 }
