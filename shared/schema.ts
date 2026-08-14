@@ -870,7 +870,6 @@ const metaEndpoints: ApiEndpoint[] = [
 
 
 
-  { path: "/v1/ai/image/magicstudio", method: "GET", description: "Generate AI art using MagicStudio (no key required)", params: [{ name: "prompt", type: "string", required: true, description: "Image prompt", default: "a cute cat" }], format: "json", category: "ai-image", provider: "MagicStudio" },
 
 const workingAIEndpoints: ApiEndpoint[] = [
   { path: "/api/ai/chat/claude", method: "GET", description: "Chat with Claude Haiku 4.5 (working)", params: Q_PARAM, format: "json", category: "ai-chat", provider: "Overchat.ai" },
@@ -895,6 +894,7 @@ const newWorkingAIModels: ApiEndpoint[] = [
   { path: "/api/ai/powerbrainai", method: "GET", description: "PowerBrain AI chat assistant", params: [{ name: "q", type: "string", required: true, description: "Message", default: "Hello" }], format: "json", category: "ai-chat", provider: "PowerBrain AI" },
   { path: "/api/ai/gemini-lite", method: "GET", description: "Gemini 2.0 Flash Lite AI", params: [{ name: "q", type: "string", required: true, description: "Prompt", default: "Say hello" }, { name: "system", type: "string", required: false, description: "Optional system prompt", default: "" }], format: "json", category: "ai-chat", provider: "Gemini" },
   { path: "/api/ai/gandalf", method: "GET", description: "Security AI for prompt testing (Lakera)", params: [{ name: "q", type: "string", required: true, description: "Prompt", default: "Hello" }, { name: "system", type: "string", required: false, description: "Optional system prompt", default: "" }], format: "json", category: "ai-chat", provider: "Lakera" },
+  { path: "/v1/ai/image/magicstudio", method: "GET", description: "Generate AI art using MagicStudio (no key required)", params: [{ name: "prompt", type: "string", required: true, description: "Image prompt", default: "a cute cat" }], format: "json", category: "ai-image", provider: "MagicStudio" },
 ];
 
 const mediaStreamingEndpoints: ApiEndpoint[] = [

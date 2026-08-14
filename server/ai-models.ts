@@ -26,13 +26,18 @@ async function feloSearch(query: string): Promise<string> {
     }
   );
 
-  const matches = response.data.match(/data: ({.*?})/g) || [];
+  // Parse SSE format - more robust
+  const lines = response.data.split("\n");
   let answer = "";
-  for (const m of matches) {
-    try {
-      const json = JSON.parse(m.slice(5));
-      if (json.data?.text) answer = json.data.text.replace(/\d+/g, "");
-    } catch {}
+  for (const line of lines) {
+    if (line.startsWith("data: ")) {
+      try {
+        const json = JSON.parse(line.slice(6));
+        if (json.data?.text) {
+          answer = json.data.text.replace(/\d+/g, "");
+        }
+      } catch {}
+    }
   }
   return answer;
 }
@@ -152,17 +157,17 @@ async function powerBrainSearch(query: string): Promise<string> {
 
 // 6. Gemini Lite (Gemini 2.0 Flash via Cloud Function)
 async function geminiLiteSearch(prompt: string, systemPrompt?: string): Promise<string> {
-  const parts: any[] = [];
+  const messageParts: any[] = [];
   if (systemPrompt) {
-    parts.push({ text: systemPrompt });
+    messageParts.push({ text: systemPrompt });
   }
-  parts.push({ text: prompt });
+  messageParts.push({ text: prompt });
   
   const response = await axios.post(
     "https://us-central1-infinite-chain-295909.cloudfunctions.net/gemini-proxy-staging-v1",
     {
       model: "gemini-2.0-flash-lite",
-      contents: [{ parts }],
+      contents: [{ parts: messageParts }],
     },
     {
       timeout: 30000,
@@ -174,8 +179,8 @@ async function geminiLiteSearch(prompt: string, systemPrompt?: string): Promise<
   );
 
   const content = response.data?.candidates?.[0]?.content;
-  const parts = content?.parts || [];
-  return parts.map((p: any) => p.text).join("");
+  const contentParts = content?.parts || [];
+  return contentParts.map((p: any) => p.text).join("");
 }
 
 // 7. Gandalf Lakera (Security AI - GET method)
