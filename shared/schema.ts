@@ -913,6 +913,16 @@ const v2DownloadEndpoints: ApiEndpoint[] = [
   { path: "/api/v2/download/ytpost", method: "GET", description: "Get YouTube community post", params: [{ name: "url", type: "string", required: true, description: "YouTube community URL", default: "https://www.youtube.com/@.../community" }], format: "json", category: "download", provider: "YouTube" },
 ];
 
+
+const movieboxEndpoints: ApiEndpoint[] = [
+  { path: "/api/v2/search/moviebox", method: "GET", description: "Search movies and TV shows on Moviebox", params: [{ name: "q", type: "string", required: true, description: "Search keyword", default: "avatar" }], format: "json", category: "search", provider: "Moviebox" },
+  { path: "/api/v2/moviebox/home", method: "GET", description: "Get Moviebox homepage content", params: [], format: "json", category: "media", provider: "Moviebox" },
+  { path: "/api/v2/moviebox/trending", method: "GET", description: "Get trending movies and shows", params: [{ name: "page", type: "number", required: false, description: "Page number", default: "0" }], format: "json", category: "media", provider: "Moviebox" },
+  { path: "/api/v2/moviebox/detail", method: "GET", description: "Get movie/show details", params: [{ name: "detailPath", type: "string", required: true, description: "Movie detail path from search results", default: "" }], format: "json", category: "media", provider: "Moviebox" },
+  { path: "/api/v2/moviebox/stream", method: "GET", description: "Get streaming URLs (360p-1080p MP4)", params: [{ name: "subjectId", type: "string", required: true, description: "Movie subject ID", default: "" }, { name: "detailPath", type: "string", required: true, description: "Movie detail path", default: "" }, { name: "se", type: "number", required: false, description: "Season (0 for movies)", default: "0" }, { name: "ep", type: "number", required: false, description: "Episode (0 for movies)", default: "0" }], format: "json", category: "media", provider: "Moviebox" },
+  { path: "/api/v2/moviebox/ranking", method: "GET", description: "Get ranked movie lists (Trending, K-Drama, Anime, etc.)", params: [{ name: "name", type: "string", required: false, description: "Ranking name (TRENDING_NOW, K_DRAMA, ANIME, etc.)", default: "" }], format: "json", category: "media", provider: "Moviebox" },
+];
+
 const newWorkingAIModels: ApiEndpoint[] = [
   { path: "/api/ai/felo", method: "GET", description: "Search AI with sources and citations", params: [{ name: "q", type: "string", required: true, description: "Search query", default: "What is AI?" }], format: "json", category: "ai-chat", provider: "Felo.ai" },
   { path: "/api/ai/bibleai", method: "GET", description: "AI-powered Bible search with 23 translations", params: [{ name: "q", type: "string", required: true, description: "Bible question", default: "What is faith?" }, { name: "translation", type: "string", required: false, description: "Translation (default: ESV)", default: "ESV" }], format: "json", category: "ai-chat", provider: "BibleAI" },
@@ -942,6 +952,7 @@ export const allEndpoints: ApiEndpoint[] = [
   ...newWorkingAIModels,
   ...v2Endpoints,
   ...v2DownloadEndpoints,
+  ...movieboxEndpoints,
   ...aiChatEndpoints,
   ...aiToolEndpoints,
   ...aiImageEndpoints,
