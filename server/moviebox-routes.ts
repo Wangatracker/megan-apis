@@ -249,9 +249,11 @@ export function registerMovieboxRoutes(app: Express): void {
         timeout: 30000,
         responseType: 'stream',
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
+          'User-Agent': 'okhttp/4.12.0',
           'Accept': '*/*',
           'Referer': 'https://themoviebox.xyz/',
+          'x-client-type': 'android',
+          'Connection': 'keep-alive',
         },
       });
 
