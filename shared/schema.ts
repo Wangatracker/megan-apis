@@ -886,6 +886,33 @@ const workingAIEndpoints: ApiEndpoint[] = [
 ];
 
 
+
+const v2Endpoints: ApiEndpoint[] = [
+  { path: "/api/v2/search/spotify", method: "GET", description: "Search Spotify tracks by keyword or URL", params: [{ name: "q", type: "string", required: true, description: "Search query or Spotify URL", default: "secukupnya" }], format: "json", category: "search", provider: "Spotidown" },
+  { path: "/api/v2/search/an1", method: "GET", description: "Search Android APK apps on AN1.com", params: [{ name: "q", type: "string", required: true, description: "App name to search", default: "pou" }], format: "json", category: "search", provider: "AN1" },
+  { path: "/api/v2/search/npm", method: "GET", description: "Search NPM package information", params: [{ name: "q", type: "string", required: true, description: "Package name", default: "axios" }], format: "json", category: "search", provider: "NPM" },
+  { path: "/api/v2/check/resi", method: "GET", description: "Track package shipment (JNE, J&T, SiCepat, etc.)", params: [{ name: "resi", type: "string", required: true, description: "Tracking number", default: "1234567890" }, { name: "courier", type: "string", required: true, description: "Courier name", default: "JNE" }], format: "json", category: "tools", provider: "Loman" },
+];
+
+
+const v2DownloadEndpoints: ApiEndpoint[] = [
+  { path: "/api/v2/download/spotify", method: "GET", description: "Download Spotify track MP3", params: [{ name: "url", type: "string", required: true, description: "Spotify track URL", default: "https://open.spotify.com/track/..." }], format: "json", category: "download", provider: "Spotidown" },
+  { path: "/api/v2/download/twitter", method: "GET", description: "Download Twitter video", params: [{ name: "url", type: "string", required: true, description: "Twitter video URL", default: "https://twitter.com/..." }], format: "json", category: "download", provider: "SnapTwitter" },
+  { path: "/api/v2/download/capcut", method: "GET", description: "Download CapCut video metadata", params: [{ name: "url", type: "string", required: true, description: "CapCut URL", default: "https://www.capcut.com/..." }], format: "json", category: "download", provider: "CapCut" },
+  { path: "/api/v2/download/capcutv2", method: "GET", description: "Download CapCut video (v2)", params: [{ name: "url", type: "string", required: true, description: "CapCut URL", default: "https://www.capcut.com/..." }], format: "json", category: "download", provider: "AnyDownloader" },
+  { path: "/api/v2/download/douyin", method: "GET", description: "Download Douyin/TikTok video", params: [{ name: "url", type: "string", required: true, description: "Douyin URL", default: "https://www.douyin.com/..." }], format: "json", category: "download", provider: "LoveTik" },
+  { path: "/api/v2/download/facebook", method: "GET", description: "Download Facebook video", params: [{ name: "url", type: "string", required: true, description: "Facebook video URL", default: "https://www.facebook.com/..." }], format: "json", category: "download", provider: "GetVidFB" },
+  { path: "/api/v2/download/gdrive", method: "GET", description: "Get Google Drive direct download link", params: [{ name: "url", type: "string", required: true, description: "Google Drive URL", default: "https://drive.google.com/file/d/..." }], format: "json", category: "download", provider: "Google Drive" },
+  { path: "/api/v2/download/github", method: "GET", description: "Download GitHub repo/file/gist data", params: [{ name: "url", type: "string", required: true, description: "GitHub URL", default: "https://github.com/..." }], format: "json", category: "download", provider: "GitHub" },
+  { path: "/api/v2/download/lahelu", method: "GET", description: "Get Lahelu post data", params: [{ name: "url", type: "string", required: true, description: "Lahelu post URL", default: "https://lahelu.com/post/..." }], format: "json", category: "download", provider: "Lahelu" },
+  { path: "/api/v2/download/pinterest", method: "GET", description: "Download Pinterest pin media", params: [{ name: "url", type: "string", required: true, description: "Pinterest URL", default: "https://pin.it/..." }], format: "json", category: "download", provider: "Pinterest" },
+  { path: "/api/v2/download/rednote", method: "GET", description: "Download Rednote/XiaoHongShu content", params: [{ name: "url", type: "string", required: true, description: "Rednote URL", default: "https://www.xiaohongshu.com/..." }], format: "json", category: "download", provider: "Rednote" },
+  { path: "/api/v2/download/soundcloud", method: "GET", description: "Download SoundCloud audio", params: [{ name: "url", type: "string", required: true, description: "SoundCloud URL", default: "https://soundcloud.com/..." }], format: "json", category: "download", provider: "SoundCloud" },
+  { path: "/api/v2/download/snackvideo", method: "GET", description: "Download SnackVideo video", params: [{ name: "url", type: "string", required: true, description: "SnackVideo URL", default: "https://s.snackvideo.com/..." }], format: "json", category: "download", provider: "SnackVideo" },
+  { path: "/api/v2/download/seegore", method: "GET", description: "Get SeeGore article data", params: [{ name: "url", type: "string", required: true, description: "SeeGore URL", default: "https://seegore.com/..." }], format: "json", category: "download", provider: "SeeGore" },
+  { path: "/api/v2/download/ytpost", method: "GET", description: "Get YouTube community post", params: [{ name: "url", type: "string", required: true, description: "YouTube community URL", default: "https://www.youtube.com/@.../community" }], format: "json", category: "download", provider: "YouTube" },
+];
+
 const newWorkingAIModels: ApiEndpoint[] = [
   { path: "/api/ai/felo", method: "GET", description: "Search AI with sources and citations", params: [{ name: "q", type: "string", required: true, description: "Search query", default: "What is AI?" }], format: "json", category: "ai-chat", provider: "Felo.ai" },
   { path: "/api/ai/bibleai", method: "GET", description: "AI-powered Bible search with 23 translations", params: [{ name: "q", type: "string", required: true, description: "Bible question", default: "What is faith?" }, { name: "translation", type: "string", required: false, description: "Translation (default: ESV)", default: "ESV" }], format: "json", category: "ai-chat", provider: "BibleAI" },
@@ -913,6 +940,8 @@ export const allEndpoints: ApiEndpoint[] = [
   ...mediaStreamingEndpoints,
   ...workingAIEndpoints,
   ...newWorkingAIModels,
+  ...v2Endpoints,
+  ...v2DownloadEndpoints,
   ...aiChatEndpoints,
   ...aiToolEndpoints,
   ...aiImageEndpoints,
@@ -1078,6 +1107,7 @@ export const allNewEndpoints: ApiEndpoint[] = [
 ];
 
 export const allEndpointsComplete: ApiEndpoint[] = [
+  ...v2Endpoints,
   ...allEndpoints,
   ...allNewEndpoints,
 ];

@@ -25,6 +25,7 @@ import { registerAIRoutes } from "./ai-routes";
 import { registerAIModels } from "./ai-models";
 import { registerAIImageRoutes } from "./ai-image-routes";
 import { registerV2Routes } from "./v2-routes";
+import { registerV2DownloadRoutes } from "./v2-download-routes";
 import { registerMovieRoutes } from "./movie-routes";
 import { downloadTikTok } from "../lib/downloaders/tiktok";
 import { downloadSnapchat } from "../lib/downloaders/snapchat";
@@ -139,6 +140,7 @@ export async function registerRoutes(
   registerAIModels(app);
   registerAIImageRoutes(app);
   registerV2Routes(app);
+  registerV2DownloadRoutes(app);
   registerMovieRoutes(app);
   registerApiKeyRoutes(app);
 
