@@ -199,7 +199,7 @@ export function registerMovieboxRoutes(app: Express): void {
     }
   });
 
-  // Stream
+  // Stream (returns both original and proxied URLs)
   app.get('/api/v2/moviebox/stream', async (req: Request, res: Response) => {
     const { subjectId, detailPath, se, ep } = req.query;
     if (!subjectId || !detailPath) {
@@ -212,6 +212,19 @@ export function registerMovieboxRoutes(app: Express): void {
         parseInt(se as string) || 0,
         parseInt(ep as string) || 0
       );
+
+      // Add proxied URLs to each stream
+      if (result.data?.streams) {
+        const host = req.headers.host || 'apis.megan.qzz.io';
+        const protocol = req.headers['x-forwarded-proto'] || 'https';
+        const baseUrl = `${protocol}://${host}`;
+
+        result.data.streams = result.data.streams.map((stream: any) => ({
+          ...stream,
+          proxy_url: `${baseUrl}/api/v2/moviebox/proxy?url=${encodeURIComponent(stream.url)}`,
+        }));
+      }
+
       return res.json({ status: true, provider: "Moviebox", result });
     } catch (e: any) {
       return res.status(500).json({ status: false, error: e.message });
@@ -239,6 +252,48 @@ export function registerMovieboxRoutes(app: Express): void {
       available_rankings: Object.keys(RANKING_LISTS),
     });
   });
+
+
+// ─── STREAM PROXY (streams video through our server) ───────────────
+  app.get('/api/v2/moviebox/proxy', async (req: Request, res: Response) => {
+    const url = req.query.url as string;
+    if (!url) return res.status(400).json({ status: false, error: "Parameter 'url' required" });
+
+    try {
+      // Fetch stream from CDN with proper headers
+      const response = await axios.get(url, {
+        timeout: 30000,
+        responseType: 'stream',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
+          'Referer': 'https://themoviebox.xyz/',
+          'Origin': 'https://themoviebox.xyz',
+          'Accept': 'video/mp4,video/*;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+      });
+
+      // Set response headers
+      res.setHeader('Content-Type', 'video/mp4');
+      res.setHeader('Content-Length', response.headers['content-length'] || '');
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+
+      // Pipe the stream to client
+      response.data.pipe(res);
+
+      response.data.on('error', (error: any) => {
+        if (!res.headersSent) {
+          res.status(500).json({ status: false, error: error.message });
+        }
+      });
+
+    } catch (e: any) {
+      return res.status(500).json({ status: false, error: e.message });
+    }
+  });
+
 
   console.log("✅ Moviebox Routes Registered:");
   console.log("  GET /api/v2/search/moviebox");
