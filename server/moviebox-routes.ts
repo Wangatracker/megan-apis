@@ -237,6 +237,46 @@ export function registerMovieboxRoutes(app: Express): void {
     });
   });
 
+
+  // Stream Proxy (fetches from CDN and streams to client)
+  app.get('/api/v2/moviebox/proxy', async (req: Request, res: Response) => {
+    const url = req.query.url as string;
+    if (!url) return res.status(400).json({ status: false, error: "Parameter 'url' required" });
+
+    try {
+      // Use simple headers - no auth needed for CDN
+      const response = await axios.get(url, {
+        timeout: 30000,
+        responseType: 'stream',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
+          'Accept': '*/*',
+          'Referer': 'https://themoviebox.xyz/',
+        },
+      });
+
+      res.setHeader('Content-Type', 'video/mp4');
+      res.setHeader('Content-Length', response.headers['content-length'] || '');
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+
+      response.data.pipe(res);
+
+      response.data.on('error', (error: any) => {
+        if (!res.headersSent) {
+          res.status(500).json({ status: false, error: error.message });
+        }
+      });
+
+    } catch (e: any) {
+      if (e.response) {
+        return res.status(e.response.status).json({ status: false, error: `CDN returned ${e.response.status}` });
+      }
+      return res.status(500).json({ status: false, error: e.message });
+    }
+  });
+
   console.log("✅ Moviebox Routes Registered:");
   console.log("  GET /api/v2/search/moviebox");
   console.log("  GET /api/v2/moviebox/home");
@@ -244,4 +284,5 @@ export function registerMovieboxRoutes(app: Express): void {
   console.log("  GET /api/v2/moviebox/detail");
   console.log("  GET /api/v2/moviebox/stream");
   console.log("  GET /api/v2/moviebox/ranking");
+  console.log("  GET /api/v2/moviebox/proxy");
 }
