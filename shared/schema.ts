@@ -935,6 +935,14 @@ const v2SearchEndpoints: ApiEndpoint[] = [
   { path: "/api/v2/search/spotify", method: "GET", description: "Search Spotify tracks (official API)", params: [{ name: "q", type: "string", required: true, description: "Track name", default: "perfect" }], format: "json", category: "search", provider: "Spotify" },
 ];
 
+
+const stalkerEndpoints: ApiEndpoint[] = [
+  { path: "/api/stalk/github", method: "GET", description: "Get GitHub user profile info", params: [{ name: "q", type: "string", required: true, description: "GitHub username", default: "octocat" }], format: "json", category: "stalker", provider: "GitHub" },
+  { path: "/api/stalk/roblox", method: "GET", description: "Get Roblox user profile info", params: [{ name: "q", type: "string", required: true, description: "Roblox username", default: "builderman" }], format: "json", category: "stalker", provider: "Roblox" },
+  { path: "/api/stalk/tiktok", method: "GET", description: "Get TikTok user profile info", params: [{ name: "q", type: "string", required: true, description: "TikTok username", default: "mrbeast" }], format: "json", category: "stalker", provider: "TikTok" },
+  { path: "/api/stalk/youtube", method: "GET", description: "Get YouTube channel info", params: [{ name: "q", type: "string", required: true, description: "YouTube channel username", default: "MrBeast" }], format: "json", category: "stalker", provider: "YouTube" },
+];
+
 const movieboxEndpoints: ApiEndpoint[] = [
   { path: "/api/v2/search/moviebox", method: "GET", description: "Search movies and TV shows on Moviebox", params: [{ name: "q", type: "string", required: true, description: "Search keyword", default: "avatar" }], format: "json", category: "search", provider: "Moviebox" },
   { path: "/api/v2/moviebox/home", method: "GET", description: "Get Moviebox homepage content", params: [], format: "json", category: "media", provider: "Moviebox" },
@@ -976,6 +984,7 @@ export const allEndpoints: ApiEndpoint[] = [
   ...movieboxEndpoints,
   ...imageProcessEndpoints,
   ...v2SearchEndpoints,
+  ...stalkerEndpoints,
   ...aiChatEndpoints,
   ...aiToolEndpoints,
   ...aiImageEndpoints,
