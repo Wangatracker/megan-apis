@@ -432,16 +432,6 @@ const photofuniaEndpoints: ApiEndpoint[] = [
   }),
 ];
 
-const stalkerEndpoints: ApiEndpoint[] = [
-  { path: "/api/v2/stalk/github", method: "GET", description: "Lookup GitHub user profile, repos, followers and stats", params: [{ name: "username", type: "string", required: true, description: "GitHub username", default: "TrackerWanga" }], format: "json", category: "stalker", provider: "GitHub" },
-  { path: "/api/stalk/ip", method: "GET", description: "Lookup IP address geolocation, ISP, timezone and ASN info", params: [{ name: "ip", type: "string", required: true, description: "IP address to lookup", default: "8.8.8.8" }], format: "json", category: "stalker", provider: "IP-API" },
-  { path: "/api/stalk/npm", method: "GET", description: "Lookup NPM package details, version, author and stats", params: [{ name: "package", type: "string", required: true, description: "NPM package name", default: "axios" }], format: "json", category: "stalker", provider: "NPM Registry" },
-  { path: "/api/v2/stalk/tiktok", method: "GET", description: "Lookup TikTok user profile, followers, likes and video count", params: [{ name: "username", type: "string", required: true, description: "TikTok username (with or without @)", default: "charlidamelio" }], format: "json", category: "stalker", provider: "TikTok" },
-  { path: "/api/stalk/instagram", method: "GET", description: "Lookup Instagram user profile info and stats", params: [{ name: "username", type: "string", required: true, description: "Instagram username", default: "instagram" }], format: "json", category: "stalker", provider: "Instagram" },
-  { path: "/api/stalk/twitter", method: "GET", description: "Lookup Twitter/X user profile, followers, tweets and verification status", params: [{ name: "username", type: "string", required: true, description: "Twitter/X username (with or without @)", default: "elonmusk" }], format: "json", category: "stalker", provider: "fxTwitter" },
-  { path: "/api/stalk/telegram", method: "GET", description: "Lookup Telegram user, channel or group profile and subscriber count", params: [{ name: "username", type: "string", required: true, description: "Telegram username or channel handle (with or without @)", default: "durov" }], format: "json", category: "stalker", provider: "Telegram" },
-];
-
 const animeEndpoints: ApiEndpoint[] = [
   { path: "/api/anime/waifu", method: "GET", description: "Get random waifu anime image", params: [], format: "json", category: "anime", provider: "waifu.pics" },
   { path: "/api/anime/neko", method: "GET", description: "Get random neko anime image", params: [], format: "json", category: "anime", provider: "waifu.pics" },
