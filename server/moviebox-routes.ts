@@ -111,18 +111,36 @@ class MovieboxClient {
     return this.request(`/wefeed-h5api-bff/detail?detailPath=${detailPath}`);
   }
 
+  async discoverDomain(): Promise<string> {
+    try {
+      const response = await axios.get(`${MOVIEBOX_BASE}/wefeed-h5api-bff/media-player/get-domain`, {
+        timeout: 10000,
+        headers: {
+          'User-Agent': MOVIEBOX_UA,
+          'X-Client-Type': 'h5',
+        }
+      });
+      if (response.data?.data) {
+        return response.data.data.replace(/\/+$/, '');
+      }
+    } catch {}
+    return 'https://123movienow.cc';
+  }
+
   async getStream(subjectId: string, detailPath: string, se = 0, ep = 0) {
-    const slug = detailPath.split('/').filter(Boolean).pop() || detailPath;
+    const domain = await this.discoverDomain();
     const token = await this.getToken();
 
-    const response = await axios.get(`${MOVIEBOX_PLAY}/wefeed-h5api-bff/subject/play`, {
+    const response = await axios.get(`${domain}/wefeed-h5api-bff/subject/play`, {
       timeout: 20000,
       headers: {
         'User-Agent': MOVIEBOX_UA,
-        'Authorization': `Bearer ${token}`,
-        'Referer': `${MOVIEBOX_PLAY}/movies/${slug}`,
+        'Accept': 'application/json',
+        'Referer': `${domain}/spa/videoPlayPage/movies/${detailPath}`,
+        'X-Client-Info': '{"timezone":"Asia/Jakarta"}',
+        'Cookie': 'uuid=d8c3539e-2e46-4000-af20-7046a856e30a',
       },
-      params: { subjectId, se, ep, detailPath, streamSignType: 1 }
+      params: { subjectId, se, ep, detailPath }
     });
 
     return response.data;
@@ -247,16 +265,18 @@ export function registerMovieboxRoutes(app: Express): void {
     try {
       const token = await moviebox.getToken();
 
+      const domain = await moviebox.discoverDomain();
+      
       const response = await axios.get(url, {
         timeout: 30000,
         responseType: 'stream',
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
-          'Referer': 'https://themoviebox.xyz/',
-          'Origin': 'https://themoviebox.xyz',
-          'Accept': 'video/mp4,video/*;q=0.9,*/*;q=0.8',
+          'User-Agent': MOVIEBOX_UA,
+          'Referer': `${domain}/`,
+          'Origin': domain,
+          'Accept': '*/*',
           'Accept-Language': 'en-US,en;q=0.9',
-          'Authorization': `Bearer ${token}`,
+          'Cookie': 'uuid=d8c3539e-2e46-4000-af20-7046a856e30a',
         },
       });
 
