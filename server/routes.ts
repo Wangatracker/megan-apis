@@ -28,6 +28,7 @@ import { registerV2Routes } from "./v2-routes";
 import { registerV2DownloadRoutes } from "./v2-download-routes";
 import { registerMovieboxRoutes } from "./moviebox-routes";
 import { registerImageProcessRoutes } from "./image-process-routes";
+import { registerSearchRoutesV2 } from "./search-routes-v2";
 import { registerMovieRoutes } from "./movie-routes";
 import { downloadTikTok } from "../lib/downloaders/tiktok";
 import { downloadSnapchat } from "../lib/downloaders/snapchat";
@@ -145,6 +146,7 @@ export async function registerRoutes(
   registerV2DownloadRoutes(app);
   registerMovieboxRoutes(app);
   registerImageProcessRoutes(app);
+  registerSearchRoutesV2(app);
   registerMovieRoutes(app);
   registerApiKeyRoutes(app);
 

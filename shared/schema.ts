@@ -922,6 +922,19 @@ const imageProcessEndpoints: ApiEndpoint[] = [
   { path: "/api/v2/image/upscale", method: "GET", description: "Upscale image 2x/4x", params: [{ name: "image", type: "string", required: true, description: "Image URL", default: "https://example.com/image.jpg" }], format: "image", category: "tools", provider: "iLoveIMG" },
 ];
 
+
+const v2SearchEndpoints: ApiEndpoint[] = [
+  { path: "/api/v2/search/gitagram", method: "GET", description: "Search music chords on Gitagram", params: [{ name: "q", type: "string", required: true, description: "Song title or artist", default: "perfect" }], format: "json", category: "search", provider: "Gitagram" },
+  { path: "/api/v2/search/lahelu", method: "GET", description: "Search Lahelu social media posts", params: [{ name: "q", type: "string", required: true, description: "Search query", default: "funny" }], format: "json", category: "search", provider: "Lahelu" },
+  { path: "/api/v2/search/mangatoon", method: "GET", description: "Search manga and comics on Mangatoon", params: [{ name: "q", type: "string", required: true, description: "Manga title", default: "action" }], format: "json", category: "search", provider: "Mangatoon" },
+  { path: "/api/v2/search/mcpedl", method: "GET", description: "Search Minecraft mods and addons", params: [{ name: "q", type: "string", required: true, description: "Mod name", default: "shaders" }], format: "json", category: "search", provider: "MCPEDL" },
+  { path: "/api/v2/search/myinstants", method: "GET", description: "Search sound effects on MyInstants", params: [{ name: "q", type: "string", required: true, description: "Sound name", default: "bruh" }], format: "json", category: "search", provider: "MyInstants" },
+  { path: "/api/v2/search/otakotaku", method: "GET", description: "Search anime on Otakotaku", params: [{ name: "q", type: "string", required: true, description: "Anime title", default: "naruto" }], format: "json", category: "search", provider: "Otakotaku" },
+  { path: "/api/v2/search/resep", method: "GET", description: "Search recipes on ResepKoki", params: [{ name: "q", type: "string", required: true, description: "Recipe name", default: "fried rice" }], format: "json", category: "search", provider: "ResepKoki" },
+  { path: "/api/v2/search/soundcloud", method: "GET", description: "Search SoundCloud tracks", params: [{ name: "q", type: "string", required: true, description: "Track name", default: "lofi" }], format: "json", category: "search", provider: "SoundCloud" },
+  { path: "/api/v2/search/spotify", method: "GET", description: "Search Spotify tracks (official API)", params: [{ name: "q", type: "string", required: true, description: "Track name", default: "perfect" }], format: "json", category: "search", provider: "Spotify" },
+];
+
 const movieboxEndpoints: ApiEndpoint[] = [
   { path: "/api/v2/search/moviebox", method: "GET", description: "Search movies and TV shows on Moviebox", params: [{ name: "q", type: "string", required: true, description: "Search keyword", default: "avatar" }], format: "json", category: "search", provider: "Moviebox" },
   { path: "/api/v2/moviebox/home", method: "GET", description: "Get Moviebox homepage content", params: [], format: "json", category: "media", provider: "Moviebox" },
@@ -962,6 +975,7 @@ export const allEndpoints: ApiEndpoint[] = [
   ...v2DownloadEndpoints,
   ...movieboxEndpoints,
   ...imageProcessEndpoints,
+  ...v2SearchEndpoints,
   ...aiChatEndpoints,
   ...aiToolEndpoints,
   ...aiImageEndpoints,
