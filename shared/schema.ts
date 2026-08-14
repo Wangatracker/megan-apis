@@ -870,6 +870,8 @@ const metaEndpoints: ApiEndpoint[] = [
 
 
 
+  { path: "/v1/ai/image/magicstudio", method: "GET", description: "Generate AI art using MagicStudio (no key required)", params: [{ name: "prompt", type: "string", required: true, description: "Image prompt", default: "a cute cat" }], format: "json", category: "ai-image", provider: "MagicStudio" },
+
 const workingAIEndpoints: ApiEndpoint[] = [
   { path: "/api/ai/chat/claude", method: "GET", description: "Chat with Claude Haiku 4.5 (working)", params: Q_PARAM, format: "json", category: "ai-chat", provider: "Overchat.ai" },
   { path: "/api/ai/chat/gpt5", method: "GET", description: "Chat with GPT-4.1 Nano (working)", params: Q_PARAM, format: "json", category: "ai-chat", provider: "Overchat.ai" },
