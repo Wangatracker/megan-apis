@@ -72,7 +72,6 @@ class MovieboxClient {
 
   async request(path: string, method: 'GET' | 'POST' = 'GET', body?: any, extraHeaders: any = {}) {
     const token = await this.getToken();
-    
     const headers = {
       'User-Agent': MOVIEBOX_UA,
       'Authorization': `Bearer ${token}`,
@@ -80,10 +79,7 @@ class MovieboxClient {
       ...extraHeaders
     };
 
-    const config: any = {
-      timeout: 20000,
-      headers,
-    };
+    const config: any = { timeout: 20000, headers };
 
     if (method === 'POST') {
       config.method = 'POST';
@@ -99,10 +95,7 @@ class MovieboxClient {
 
   async search(keyword: string, page = 1) {
     return this.request('/wefeed-h5api-bff/subject/search', 'POST', {
-      keyword,
-      page,
-      perPage: 20,
-      subjectType: 0
+      keyword, page, perPage: 20, subjectType: 0
     });
   }
 
@@ -121,7 +114,7 @@ class MovieboxClient {
   async getStream(subjectId: string, detailPath: string, se = 0, ep = 0) {
     const slug = detailPath.split('/').filter(Boolean).pop() || detailPath;
     const token = await this.getToken();
-    
+
     const response = await axios.get(`${MOVIEBOX_PLAY}/wefeed-h5api-bff/subject/play`, {
       timeout: 20000,
       headers: {
@@ -129,15 +122,9 @@ class MovieboxClient {
         'Authorization': `Bearer ${token}`,
         'Referer': `${MOVIEBOX_PLAY}/movies/${slug}`,
       },
-      params: {
-        subjectId,
-        se,
-        ep,
-        detailPath,
-        streamSignType: 1
-      }
+      params: { subjectId, se, ep, detailPath, streamSignType: 1 }
     });
-    
+
     return response.data;
   }
 
@@ -235,7 +222,7 @@ export function registerMovieboxRoutes(app: Express): void {
   app.get('/api/v2/moviebox/ranking', async (req: Request, res: Response) => {
     const name = req.query.name as string;
     const page = parseInt(req.query.page as string) || 1;
-    
+
     if (name && RANKING_LISTS[name as keyof typeof RANKING_LISTS]) {
       try {
         const result = await moviebox.getRanking(RANKING_LISTS[name as keyof typeof RANKING_LISTS], page);
@@ -244,8 +231,7 @@ export function registerMovieboxRoutes(app: Express): void {
         return res.status(500).json({ status: false, error: e.message });
       }
     }
-    
-    // Return list of available rankings
+
     return res.json({
       status: true,
       provider: "Moviebox",
@@ -253,14 +239,14 @@ export function registerMovieboxRoutes(app: Express): void {
     });
   });
 
-
-// ─── STREAM PROXY (streams video through our server) ───────────────
+  // Stream Proxy (streams video through our server)
   app.get('/api/v2/moviebox/proxy', async (req: Request, res: Response) => {
     const url = req.query.url as string;
     if (!url) return res.status(400).json({ status: false, error: "Parameter 'url' required" });
 
     try {
-      // Fetch stream from CDN with proper headers
+      const token = await moviebox.getToken();
+
       const response = await axios.get(url, {
         timeout: 30000,
         responseType: 'stream',
@@ -270,17 +256,16 @@ export function registerMovieboxRoutes(app: Express): void {
           'Origin': 'https://themoviebox.xyz',
           'Accept': 'video/mp4,video/*;q=0.9,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.9',
+          'Authorization': `Bearer ${token}`,
         },
       });
 
-      // Set response headers
       res.setHeader('Content-Type', 'video/mp4');
       res.setHeader('Content-Length', response.headers['content-length'] || '');
       res.setHeader('Accept-Ranges', 'bytes');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Access-Control-Allow-Origin', '*');
 
-      // Pipe the stream to client
       response.data.pipe(res);
 
       response.data.on('error', (error: any) => {
@@ -294,7 +279,6 @@ export function registerMovieboxRoutes(app: Express): void {
     }
   });
 
-
   console.log("✅ Moviebox Routes Registered:");
   console.log("  GET /api/v2/search/moviebox");
   console.log("  GET /api/v2/moviebox/home");
@@ -302,48 +286,5 @@ export function registerMovieboxRoutes(app: Express): void {
   console.log("  GET /api/v2/moviebox/detail");
   console.log("  GET /api/v2/moviebox/stream");
   console.log("  GET /api/v2/moviebox/ranking");
+  console.log("  GET /api/v2/moviebox/proxy");
 }
-
-// ─── STREAM PROXY (bypasses 429 rate limiting) ───────────────
-app.get('/api/v2/moviebox/proxy', async (req: Request, res: Response) => {
-  const url = req.query.url as string;
-  if (!url) return res.status(400).json({ status: false, error: "Parameter 'url' required" });
-
-  try {
-    // Get fresh token for auth
-    const token = await moviebox.getToken();
-    
-    // Fetch stream from CDN with proper headers
-    const response = await axios.get(url, {
-      timeout: 30000,
-      responseType: 'stream',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
-        'Referer': 'https://themoviebox.xyz/',
-        'Origin': 'https://themoviebox.xyz',
-        'Accept': 'video/mp4,video/*;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    // Set response headers
-    res.setHeader('Content-Type', 'video/mp4');
-    res.setHeader('Content-Length', response.headers['content-length'] || '');
-    res.setHeader('Accept-Ranges', 'bytes');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-
-    // Pipe the stream to client
-    response.data.pipe(res);
-
-    response.data.on('error', (error: any) => {
-      if (!res.headersSent) {
-        res.status(500).json({ status: false, error: error.message });
-      }
-    });
-
-  } catch (e: any) {
-    return res.status(500).json({ status: false, error: e.message });
-  }
-});
