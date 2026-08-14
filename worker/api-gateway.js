@@ -1,4 +1,5 @@
 // ─── Megan APIs Gateway — API Routes Only ──────────────────────────────────
+
 const RENDER_URL = "https://megan-apis-33r1.onrender.com";
 const PAGES_URL = "https://master.megan-apis-frontend.pages.dev";
 const AUTH_URL = "https://auth.megan.qzz.io";
@@ -51,12 +52,12 @@ export default {
     }
 
     // ═══ PUBLIC API ROUTES (no key needed) ═══
-    if (path === "/api/config/cards" || path === "/api/media/status" || path === "/api/status" || path === "/api/endpoints" || path === "/api/endpoints/search" || path === "/api/endpoints/categories" || path === "/api/endpoints/stats" || path === "/api/endpoints/category/ai" || path === "/health") {
+    if (path === "/api/config/cards" || path === "/api/media/status" || path === "/api/status" || path === "/api/endpoints" || path === "/api/endpoints/search" || path === "/api/endpoints/categories" || path === "/api/endpoints/stats" || path === "/health") {
       return proxyTo(RENDER_URL + path + url.search, request);
     }
 
     // ═══ API KEY VALIDATION — via Auth Service ═══
-    if (path.startsWith("/api/") || path.startsWith("/download/") || path.startsWith("/files/") || path.startsWith("/proxy") || path.startsWith("/stream")) {
+    if (path.startsWith("/api/") || path.startsWith("/v1/") || path.startsWith("/download/") || path.startsWith("/files/") || path.startsWith("/proxy") || path.startsWith("/stream")) {
       
       // Key generation — public
       if (path === "/api/keys/generate" || path.startsWith("/api/keys/")) {
@@ -71,10 +72,10 @@ export default {
       // Validate API key
       var apikey = getApiKey(request);
       if (!apikey) {
-        return corsResponse(JSON.stringify({ 
-          success: false, 
+        return corsResponse(JSON.stringify({
+          success: false,
           error: "API key required. Get one at https://apis.megan.qzz.io/keys",
-          creator: "Megan APIs by Tracker Wanga | Megan Tech" 
+          creator: "Megan APIs by Tracker Wanga | Megan Tech"
         }), 401);
       }
 
@@ -87,10 +88,10 @@ export default {
         });
         var keyResult = await keyCheck.json();
         if (!keyResult.valid) {
-          return corsResponse(JSON.stringify({ 
-            success: false, 
+          return corsResponse(JSON.stringify({
+            success: false,
             error: "Invalid or revoked API key",
-            creator: "Megan APIs by Tracker Wanga | Megan Tech" 
+            creator: "Megan APIs by Tracker Wanga | Megan Tech"
           }), 403);
         }
       } catch (e) {
