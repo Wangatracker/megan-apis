@@ -119,7 +119,7 @@ async function youtubeStalk(username: string) {
 // ============================================
 export function registerStalkerRoutes(app: Express): void {
 
-  app.get('/api/stalk/github', async (req: Request, res: Response) => {
+  app.get('/api/v2/stalk/github', async (req: Request, res: Response) => {
     const q = req.query.q as string;
     if (!q) return res.status(400).json({ status: false, error: "Parameter 'q' required" });
     try {
@@ -130,7 +130,7 @@ export function registerStalkerRoutes(app: Express): void {
     }
   });
 
-  app.get('/api/stalk/roblox', async (req: Request, res: Response) => {
+  app.get('/api/v2/stalk/roblox', async (req: Request, res: Response) => {
     const q = req.query.q as string;
     if (!q) return res.status(400).json({ status: false, error: "Parameter 'q' required" });
     try {
@@ -141,7 +141,7 @@ export function registerStalkerRoutes(app: Express): void {
     }
   });
 
-  app.get('/api/stalk/tiktok', async (req: Request, res: Response) => {
+  app.get('/api/v2/stalk/tiktok', async (req: Request, res: Response) => {
     const q = req.query.q as string;
     if (!q) return res.status(400).json({ status: false, error: "Parameter 'q' required" });
     try {
@@ -152,7 +152,7 @@ export function registerStalkerRoutes(app: Express): void {
     }
   });
 
-  app.get('/api/stalk/youtube', async (req: Request, res: Response) => {
+  app.get('/api/v2/stalk/youtube', async (req: Request, res: Response) => {
     const q = req.query.q as string;
     if (!q) return res.status(400).json({ status: false, error: "Parameter 'q' required" });
     try {
@@ -164,8 +164,8 @@ export function registerStalkerRoutes(app: Express): void {
   });
 
   console.log("✅ Stalker Routes Registered:");
-  console.log("  GET /api/stalk/github");
-  console.log("  GET /api/stalk/roblox");
-  console.log("  GET /api/stalk/tiktok");
-  console.log("  GET /api/stalk/youtube");
+  console.log("  GET /api/v2/stalk/github");
+  console.log("  GET /api/v2/stalk/roblox");
+  console.log("  GET /api/v2/stalk/tiktok");
+  console.log("  GET /api/v2/stalk/youtube");
 }

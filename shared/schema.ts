@@ -433,10 +433,10 @@ const photofuniaEndpoints: ApiEndpoint[] = [
 ];
 
 const stalkerEndpoints: ApiEndpoint[] = [
-  { path: "/api/stalk/github", method: "GET", description: "Lookup GitHub user profile, repos, followers and stats", params: [{ name: "username", type: "string", required: true, description: "GitHub username", default: "TrackerWanga" }], format: "json", category: "stalker", provider: "GitHub" },
+  { path: "/api/v2/stalk/github", method: "GET", description: "Lookup GitHub user profile, repos, followers and stats", params: [{ name: "username", type: "string", required: true, description: "GitHub username", default: "TrackerWanga" }], format: "json", category: "stalker", provider: "GitHub" },
   { path: "/api/stalk/ip", method: "GET", description: "Lookup IP address geolocation, ISP, timezone and ASN info", params: [{ name: "ip", type: "string", required: true, description: "IP address to lookup", default: "8.8.8.8" }], format: "json", category: "stalker", provider: "IP-API" },
   { path: "/api/stalk/npm", method: "GET", description: "Lookup NPM package details, version, author and stats", params: [{ name: "package", type: "string", required: true, description: "NPM package name", default: "axios" }], format: "json", category: "stalker", provider: "NPM Registry" },
-  { path: "/api/stalk/tiktok", method: "GET", description: "Lookup TikTok user profile, followers, likes and video count", params: [{ name: "username", type: "string", required: true, description: "TikTok username (with or without @)", default: "charlidamelio" }], format: "json", category: "stalker", provider: "TikTok" },
+  { path: "/api/v2/stalk/tiktok", method: "GET", description: "Lookup TikTok user profile, followers, likes and video count", params: [{ name: "username", type: "string", required: true, description: "TikTok username (with or without @)", default: "charlidamelio" }], format: "json", category: "stalker", provider: "TikTok" },
   { path: "/api/stalk/instagram", method: "GET", description: "Lookup Instagram user profile info and stats", params: [{ name: "username", type: "string", required: true, description: "Instagram username", default: "instagram" }], format: "json", category: "stalker", provider: "Instagram" },
   { path: "/api/stalk/twitter", method: "GET", description: "Lookup Twitter/X user profile, followers, tweets and verification status", params: [{ name: "username", type: "string", required: true, description: "Twitter/X username (with or without @)", default: "elonmusk" }], format: "json", category: "stalker", provider: "fxTwitter" },
   { path: "/api/stalk/telegram", method: "GET", description: "Lookup Telegram user, channel or group profile and subscriber count", params: [{ name: "username", type: "string", required: true, description: "Telegram username or channel handle (with or without @)", default: "durov" }], format: "json", category: "stalker", provider: "Telegram" },
@@ -937,10 +937,10 @@ const v2SearchEndpoints: ApiEndpoint[] = [
 
 
 const stalkerEndpoints: ApiEndpoint[] = [
-  { path: "/api/stalk/github", method: "GET", description: "Get GitHub user profile info", params: [{ name: "q", type: "string", required: true, description: "GitHub username", default: "octocat" }], format: "json", category: "stalker", provider: "GitHub" },
-  { path: "/api/stalk/roblox", method: "GET", description: "Get Roblox user profile info", params: [{ name: "q", type: "string", required: true, description: "Roblox username", default: "builderman" }], format: "json", category: "stalker", provider: "Roblox" },
-  { path: "/api/stalk/tiktok", method: "GET", description: "Get TikTok user profile info", params: [{ name: "q", type: "string", required: true, description: "TikTok username", default: "mrbeast" }], format: "json", category: "stalker", provider: "TikTok" },
-  { path: "/api/stalk/youtube", method: "GET", description: "Get YouTube channel info", params: [{ name: "q", type: "string", required: true, description: "YouTube channel username", default: "MrBeast" }], format: "json", category: "stalker", provider: "YouTube" },
+  { path: "/api/v2/stalk/github", method: "GET", description: "Get GitHub user profile info", params: [{ name: "q", type: "string", required: true, description: "GitHub username", default: "octocat" }], format: "json", category: "stalker", provider: "GitHub" },
+  { path: "/api/v2/stalk/roblox", method: "GET", description: "Get Roblox user profile info", params: [{ name: "q", type: "string", required: true, description: "Roblox username", default: "builderman" }], format: "json", category: "stalker", provider: "Roblox" },
+  { path: "/api/v2/stalk/tiktok", method: "GET", description: "Get TikTok user profile info", params: [{ name: "q", type: "string", required: true, description: "TikTok username", default: "mrbeast" }], format: "json", category: "stalker", provider: "TikTok" },
+  { path: "/api/v2/stalk/youtube", method: "GET", description: "Get YouTube channel info", params: [{ name: "q", type: "string", required: true, description: "YouTube channel username", default: "MrBeast" }], format: "json", category: "stalker", provider: "YouTube" },
 ];
 
 const movieboxEndpoints: ApiEndpoint[] = [
