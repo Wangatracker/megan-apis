@@ -23,7 +23,7 @@ import { searchSongs, getDownloadInfo, extractVideoId, reloadCookies, tempFiles,
 const execAsync = promisify(exec);
 import { registerAIRoutes } from "./ai-routes";
 import { registerAIModels } from "./ai-models";
-import { registerAIImages } from "./ai-images";
+import { registerAIImageRoutes } from "./ai-image-routes";
 import { registerMovieRoutes } from "./movie-routes";
 import { downloadTikTok } from "../lib/downloaders/tiktok";
 import { downloadSnapchat } from "../lib/downloaders/snapchat";
@@ -136,7 +136,7 @@ export async function registerRoutes(
 ): Promise<Server> {
   registerAIRoutes(app);
   registerAIModels(app);
-  registerAIImages(app);
+  registerAIImageRoutes(app);
   registerMovieRoutes(app);
   registerApiKeyRoutes(app);
 
