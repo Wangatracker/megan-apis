@@ -151,12 +151,18 @@ async function powerBrainSearch(query: string): Promise<string> {
 }
 
 // 6. Gemini Lite (Gemini 2.0 Flash via Cloud Function)
-async function geminiLiteSearch(prompt: string): Promise<string> {
+async function geminiLiteSearch(prompt: string, systemPrompt?: string): Promise<string> {
+  const parts: any[] = [];
+  if (systemPrompt) {
+    parts.push({ text: systemPrompt });
+  }
+  parts.push({ text: prompt });
+  
   const response = await axios.post(
     "https://us-central1-infinite-chain-295909.cloudfunctions.net/gemini-proxy-staging-v1",
     {
       model: "gemini-2.0-flash-lite",
-      contents: [{ parts: [{ text: prompt }] }],
+      contents: [{ parts }],
     },
     {
       timeout: 30000,
@@ -268,9 +274,10 @@ export function registerAIModels(app: Express): void {
   // Gemini Lite
   app.get("/api/ai/gemini-lite", async (req: Request, res: Response) => {
     const prompt = (req.query.q || req.query.prompt) as string;
+    const systemPrompt = req.query.system as string | undefined;
     if (!prompt) return res.status(400).json({ status: false, error: "Parameter 'q' required" });
     try {
-      const answer = await geminiLiteSearch(prompt);
+      const answer = await geminiLiteSearch(prompt, systemPrompt);
       return res.json({ status: true, provider: "Gemini Lite", model: "gemini-2.0-flash-lite", result: answer });
     } catch (e: any) {
       return res.status(500).json({ status: false, error: e.message });
@@ -280,9 +287,11 @@ export function registerAIModels(app: Express): void {
   // Gandalf Lakera
   app.get("/api/ai/gandalf", async (req: Request, res: Response) => {
     const prompt = (req.query.q || req.query.prompt) as string;
+    const systemPrompt = req.query.system as string | undefined;
     if (!prompt) return res.status(400).json({ status: false, error: "Parameter 'q' required" });
     try {
-      const answer = await gandalfSearch(prompt);
+      const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
+      const answer = await gandalfSearch(fullPrompt);
       return res.json({ status: true, provider: "Gandalf Lakera", result: answer });
     } catch (e: any) {
       return res.status(500).json({ status: false, error: e.message });

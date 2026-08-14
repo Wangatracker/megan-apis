@@ -886,6 +886,17 @@ const workingAIEndpoints: ApiEndpoint[] = [
   { path: "/api/ai/video/generate", method: "POST", description: "Generate video from text (unlimited with device rotation)", params: [{ name: "prompt", type: "string", required: true, description: "Video prompt", default: "a cat playing piano" }, { name: "aspect_ratio", type: "string", required: false, description: "Aspect ratio (auto, 1:1, 16:9, 9:16)", default: "auto" }, { name: "ai_sound", type: "boolean", required: false, description: "Add AI sound/voice", default: "true" }], format: "json", category: "ai-tools", provider: "TXT2VI" },
 ];
 
+
+const newWorkingAIModels: ApiEndpoint[] = [
+  { path: "/api/ai/felo", method: "GET", description: "Search AI with sources and citations", params: [{ name: "q", type: "string", required: true, description: "Search query", default: "What is AI?" }], format: "json", category: "ai-chat", provider: "Felo.ai" },
+  { path: "/api/ai/bibleai", method: "GET", description: "AI-powered Bible search with 23 translations", params: [{ name: "q", type: "string", required: true, description: "Bible question", default: "What is faith?" }, { name: "translation", type: "string", required: false, description: "Translation (default: ESV)", default: "ESV" }], format: "json", category: "ai-chat", provider: "BibleAI" },
+  { path: "/api/ai/gita", method: "GET", description: "Spiritual AI based on Bhagavad Gita", params: [{ name: "q", type: "string", required: true, description: "Question", default: "What is karma?" }], format: "json", category: "ai-chat", provider: "GitaGPT" },
+  { path: "/api/ai/muslimai", method: "GET", description: "Islamic AI with Quran references", params: [{ name: "q", type: "string", required: true, description: "Question", default: "What is prayer?" }], format: "json", category: "ai-chat", provider: "MuslimAI" },
+  { path: "/api/ai/powerbrainai", method: "GET", description: "PowerBrain AI chat assistant", params: [{ name: "q", type: "string", required: true, description: "Message", default: "Hello" }], format: "json", category: "ai-chat", provider: "PowerBrain AI" },
+  { path: "/api/ai/gemini-lite", method: "GET", description: "Gemini 2.0 Flash Lite AI", params: [{ name: "q", type: "string", required: true, description: "Prompt", default: "Say hello" }, { name: "system", type: "string", required: false, description: "Optional system prompt", default: "" }], format: "json", category: "ai-chat", provider: "Gemini" },
+  { path: "/api/ai/gandalf", method: "GET", description: "Security AI for prompt testing (Lakera)", params: [{ name: "q", type: "string", required: true, description: "Prompt", default: "Hello" }, { name: "system", type: "string", required: false, description: "Optional system prompt", default: "" }], format: "json", category: "ai-chat", provider: "Lakera" },
+];
+
 const mediaStreamingEndpoints: ApiEndpoint[] = [
   { path: "/v1/seegore/home", method: "GET", description: "Get latest videos from SeeGore with direct MP4 links", params: [], format: "json", category: "media", provider: "SeeGore" },
   { path: "/v1/seegore/search", method: "GET", description: "Search SeeGore videos by keyword", params: [{ name: "q", type: "string", required: true, description: "Search query", default: "accident" }], format: "json", category: "media", provider: "SeeGore" },
@@ -901,6 +912,7 @@ const mediaStreamingEndpoints: ApiEndpoint[] = [
 export const allEndpoints: ApiEndpoint[] = [
   ...mediaStreamingEndpoints,
   ...workingAIEndpoints,
+  ...newWorkingAIModels,
   ...aiChatEndpoints,
   ...aiToolEndpoints,
   ...aiImageEndpoints,
