@@ -238,45 +238,79 @@ export function registerMovieboxRoutes(app: Express): void {
   });
 
 
-  // Stream Proxy (fetches from CDN and streams to client)
+  // Stream Proxy (uses https.request for better control)
   app.get('/api/v2/moviebox/proxy', async (req: Request, res: Response) => {
     const url = req.query.url as string;
     if (!url) return res.status(400).json({ status: false, error: "Parameter 'url' required" });
 
+    let targetUrl: URL;
     try {
-      // Use simple headers - no auth needed for CDN
-      const response = await axios.get(url, {
-        timeout: 30000,
-        responseType: 'stream',
-        headers: {
-          'User-Agent': 'okhttp/4.12.0',
-          'Accept': '*/*',
-          'Referer': 'https://themoviebox.xyz/',
-          'x-client-type': 'android',
-          'Connection': 'keep-alive',
-        },
-      });
+      targetUrl = new URL(url);
+    } catch (e) {
+      return res.status(400).json({ status: false, error: "Invalid URL" });
+    }
 
-      res.setHeader('Content-Type', 'video/mp4');
-      res.setHeader('Content-Length', response.headers['content-length'] || '');
+    const https = require('https');
+    const http = require('http');
+
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      'Accept': '*/*',
+      'Origin': `${targetUrl.protocol}//${targetUrl.hostname}`,
+      'Referer': `${targetUrl.protocol}//${targetUrl.hostname}/`,
+      'X-App-Version': '3.7.0',
+      'X-User': '{"token":"","userId":"0","userType":0,"appType":3}',
+    };
+
+    // Pass through Range header for streaming
+    if (req.headers.range) {
+      headers['Range'] = req.headers.range;
+    }
+
+    const options = {
+      hostname: targetUrl.hostname,
+      path: targetUrl.pathname + targetUrl.search,
+      method: 'GET',
+      headers,
+      timeout: 60000,
+    };
+
+    const protocol = targetUrl.protocol === 'https:' ? https : http;
+
+    const proxyReq = protocol.request(options, (proxyRes: any) => {
+      // Handle redirects
+      if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
+        const redirectUrl = new URL(proxyRes.headers.location, targetUrl);
+        return res.redirect(`/api/v2/moviebox/proxy?url=${encodeURIComponent(redirectUrl.toString())}`);
+      }
+
+      // Set response headers
+      res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'video/mp4');
+      if (proxyRes.headers['content-length']) {
+        res.setHeader('Content-Length', proxyRes.headers['content-length']);
+      }
       res.setHeader('Accept-Ranges', 'bytes');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Access-Control-Allow-Origin', '*');
 
-      response.data.pipe(res);
+      res.writeHead(proxyRes.statusCode || 200);
+      proxyRes.pipe(res);
+    });
 
-      response.data.on('error', (error: any) => {
-        if (!res.headersSent) {
-          res.status(500).json({ status: false, error: error.message });
-        }
-      });
-
-    } catch (e: any) {
-      if (e.response) {
-        return res.status(e.response.status).json({ status: false, error: `CDN returned ${e.response.status}` });
+    proxyReq.on('error', (err: any) => {
+      if (!res.headersSent) {
+        res.status(502).json({ status: false, error: err.message });
       }
-      return res.status(500).json({ status: false, error: e.message });
-    }
+    });
+
+    proxyReq.on('timeout', () => {
+      proxyReq.destroy();
+      if (!res.headersSent) {
+        res.status(504).json({ status: false, error: 'Gateway timeout' });
+      }
+    });
+
+    proxyReq.end();
   });
 
   console.log("✅ Moviebox Routes Registered:");
