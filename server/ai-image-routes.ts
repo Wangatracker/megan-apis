@@ -128,14 +128,14 @@ export function registerAIImageRoutes(app: Express): void {
 
     try {
       const imageBuffer = await magicStudioGenerate(prompt);
-      return res.json({
-        success: true,
-        provider: "MagicStudio",
-        model: "AI Art Generator",
-        prompt,
-        image_base64: imageBuffer.toString("base64"),
-        image_size: imageBuffer.length,
-      });
+      
+      // Return image directly with proper headers
+      res.setHeader("Content-Type", "image/jpeg");
+      res.setHeader("Content-Length", imageBuffer.length.toString());
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      res.setHeader("Content-Disposition", `inline; filename="magicstudio-${Date.now()}.jpg"`);
+      
+      return res.send(imageBuffer);
     } catch (e: any) {
       return res.status(500).json({ success: false, error: e.message });
     }
@@ -148,14 +148,14 @@ export function registerAIImageRoutes(app: Express): void {
 
     try {
       const imageBuffer = await magicStudioGenerate(prompt);
-      return res.json({
-        success: true,
-        provider: "MagicStudio",
-        model: "AI Art Generator",
-        prompt,
-        image_base64: imageBuffer.toString("base64"),
-        image_size: imageBuffer.length,
-      });
+      
+      // Return image directly with proper headers
+      res.setHeader("Content-Type", "image/jpeg");
+      res.setHeader("Content-Length", imageBuffer.length.toString());
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      res.setHeader("Content-Disposition", `inline; filename="magicstudio-${Date.now()}.jpg"`);
+      
+      return res.send(imageBuffer);
     } catch (e: any) {
       return res.status(500).json({ success: false, error: e.message });
     }
