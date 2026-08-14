@@ -24,6 +24,7 @@ const execAsync = promisify(exec);
 import { registerAIRoutes } from "./ai-routes";
 import { registerAIModels } from "./ai-models";
 import { registerAIImageRoutes } from "./ai-image-routes";
+import { registerV2Routes } from "./v2-routes";
 import { registerMovieRoutes } from "./movie-routes";
 import { downloadTikTok } from "../lib/downloaders/tiktok";
 import { downloadSnapchat } from "../lib/downloaders/snapchat";
@@ -137,6 +138,7 @@ export async function registerRoutes(
   registerAIRoutes(app);
   registerAIModels(app);
   registerAIImageRoutes(app);
+  registerV2Routes(app);
   registerMovieRoutes(app);
   registerApiKeyRoutes(app);
 
