@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { usageTracker } from "./usage-tracker";
 import { responseTransformer } from "./response-transformer";
 import { createServer } from "http";
 import { exec } from "child_process";
@@ -120,6 +121,9 @@ app.use((req, res, next) => {
 
   // Transform all responses to new format
   app.use(responseTransformer);
+
+  // Usage tracking middleware
+  app.use(usageTracker);
 
   await registerRoutes(httpServer, app);
 
