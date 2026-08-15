@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { responseTransformer } from "./response-transformer";
 import { createServer } from "http";
 import { exec } from "child_process";
 import cors from "cors";
@@ -117,7 +118,13 @@ app.use((req, res, next) => {
 (async () => {
   autoUpdateYtDlp();
 
+  // Transform all responses to new format
+  app.use(responseTransformer);
+
   await registerRoutes(httpServer, app);
+
+  // Transform all responses to new format (after routes so it intercepts them)
+  app.use(responseTransformer);
 
   // Error handler
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

@@ -185,21 +185,59 @@ export function blockDirectSourceAccess(req: Request, res: Response, next: NextF
 
 // ─── Response Fingerprinting ───────────────────────────────────────────────
 
-export function responseFingerprint(_req: Request, res: Response, next: NextFunction): void {
+export function responseFingerprint(req: Request, res: Response, next: NextFunction): void {
   const originalJson = res.json.bind(res);
+  const startTime = (req as any)._startTime || Date.now();
+  
   res.json = function (body: any) {
-    if (body && typeof body === "object") {
-      // Only add metadata if not already present (for legacy routes)
-      if (!body.api_info) {
-        // Legacy route - add basic metadata at the end
-        body.api_name = "Megan APIs";
-        body.version = "3.6.4";
-        body.creator = "Tracker Wanga";
-        body.tech = "Megan Tech";
-      }
-      // If already has api_info, don't duplicate
+    // Skip if body is not object, is Buffer, or already has api_info
+    if (!body || typeof body !== 'object' || Buffer.isBuffer(body) || body.api_info) {
+      return originalJson(body);
     }
-    return originalJson(body);
+    
+    const statusCode = res.statusCode || 200;
+    const statusNames: Record<number, string> = { 200: "OK", 201: "Created", 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found", 429: "Rate Limited", 500: "Internal Server Error", 502: "Bad Gateway", 503: "Service Unavailable", 504: "Gateway Timeout" };
+    const meanings: Record<number, string> = { 200: "Request completed successfully", 201: "Resource created successfully", 400: "Missing or invalid parameters", 401: "Invalid or missing API key", 403: "Access denied", 404: "Resource or endpoint not found", 429: "Too many requests", 500: "Something went wrong on our end", 502: "Upstream service failed", 503: "Service temporarily down", 504: "Upstream timed out" };
+    
+    // Extract old metadata fields
+    const { api_name, version, creator, tech, success, error, ...data } = body;
+    
+    const transformed: any = {
+      api_info: {
+        api_name: "Megan APIs",
+        api_id: `megan-apis-v3-${Date.now().toString(36)}`,
+        version: "3.7.0",
+        creator: "Tracker Wanga",
+        tech: "Megan Tech",
+        channel_url: "https://whatsapp.com/channel/0029Vb0YxZaJZg4GJQYJYl1o",
+      },
+      status: {
+        success: statusCode < 400,
+        code: statusCode,
+        name: statusNames[statusCode] || "Unknown",
+        meaning: meanings[statusCode] || "Request processed",
+      },
+      request: {
+        timestamp: new Date().toISOString(),
+        endpoint: req.path,
+        method: req.method,
+        requested_ip: req.ip || "unknown",
+        response_time_ms: Date.now() - startTime,
+      },
+    };
+    
+    // Add error if present
+    if (error) {
+      transformed.status.error = error;
+    }
+    
+    // Add data (everything except old metadata)
+    const dataKeys = Object.keys(data);
+    if (dataKeys.length > 0) {
+      transformed.data = data;
+    }
+    
+    return originalJson(transformed);
   };
   next();
 }
