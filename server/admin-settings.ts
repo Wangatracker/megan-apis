@@ -27,11 +27,11 @@ const DEFAULT_SETTINGS: AdminSettings = {
   repoCards: [
     {
       id: "wolfxcore",
-      name: "wolfXcore",
-      url: "https://github.com/TrackerWanga/wolfXcore",
-      description: "Cyberpunk game server panel — Paystack/M-Pesa billing & auto-provisioning",
-      badge: "Laravel + React",
-      display: "github.com/TrackerWanga/wolfXcore",
+      name: "meganapis",
+      url: "https://github.com/TrackerWanga/meganapis",
+      description: "Free REST API hub — 800+ endpoints. AI chat, social media downloads, image effects, OSINT tools.",
+      badge: "Node.js + Express",
+      display: "github.com/TrackerWanga/meganapis",
       icon: "github",
     },
     {
