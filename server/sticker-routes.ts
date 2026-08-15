@@ -103,7 +103,7 @@ async function stickerlySearch(query: string) {
 
 export function registerStickerRoutes(app: Express): void {
   // Stickerly Detail GET
-  app.get("/api/sticker/stickerly-detail", async (req: Request, res: Response) => {
+  app.get("/api/v2/sticker/stickerly-detail", async (req: Request, res: Response) => {
     const url = req.query.url as string;
     if (!url) return res.status(400).json({ status: false, error: "Parameter 'url' required" });
     if (!url.startsWith("https://sticker.ly/s/")) {
@@ -119,7 +119,7 @@ export function registerStickerRoutes(app: Express): void {
   });
 
   // Stickerly Detail POST
-  app.post("/api/sticker/stickerly-detail", async (req: Request, res: Response) => {
+  app.post("/api/v2/sticker/stickerly-detail", async (req: Request, res: Response) => {
     const { url } = req.body || {};
     if (!url) return res.status(400).json({ status: false, error: "URL is required in request body" });
     if (!url.startsWith("https://sticker.ly/s/")) {
@@ -135,7 +135,7 @@ export function registerStickerRoutes(app: Express): void {
   });
 
   // Stickerly Search GET
-  app.get("/api/sticker/stickerly-search", async (req: Request, res: Response) => {
+  app.get("/api/v2/sticker/stickerly-search", async (req: Request, res: Response) => {
     const query = req.query.query as string;
     if (!query) return res.status(400).json({ status: false, error: "Parameter 'query' required" });
     if (query.trim().length === 0) return res.status(400).json({ status: false, error: "Query must be non-empty" });
@@ -152,7 +152,7 @@ export function registerStickerRoutes(app: Express): void {
   });
 
   // Stickerly Search POST
-  app.post("/api/sticker/stickerly-search", async (req: Request, res: Response) => {
+  app.post("/api/v2/sticker/stickerly-search", async (req: Request, res: Response) => {
     const { query } = req.body || {};
     if (!query) return res.status(400).json({ status: false, error: "Query is required in request body" });
     if (query.trim().length === 0) return res.status(400).json({ status: false, error: "Query must be non-empty" });
@@ -169,8 +169,8 @@ export function registerStickerRoutes(app: Express): void {
   });
 
   console.log("✅ Sticker Routes Registered:");
-  console.log("  GET /api/sticker/stickerly-detail?url=...");
-  console.log("  POST /api/sticker/stickerly-detail");
-  console.log("  GET /api/sticker/stickerly-search?query=...");
-  console.log("  POST /api/sticker/stickerly-search");
+  console.log("  GET /api/v2/sticker/stickerly-detail?url=...");
+  console.log("  POST /api/v2/sticker/stickerly-detail");
+  console.log("  GET /api/v2/sticker/stickerly-search?query=...");
+  console.log("  POST /api/v2/sticker/stickerly-search");
 }

@@ -2044,6 +2044,40 @@ const animeIndividualEndpoints: ApiEndpoint[] = animeTypes.map(type =>
 
 // ─── ALL ENDPOINTS COMPLETE ─────────────────────────────────────────────────
 
+const stickerEndpoints: ApiEndpoint[] = [
+  createEndpoint("/api/v2/sticker/stickerly-detail", "GET", "Get detailed Sticker.ly sticker pack info by share URL. Returns pack name, author details (name, username, bio, followers), sticker list with image URLs, view count, export count, and thumbnail.", [
+    { name: "url", type: "string", required: true, description: "Sticker.ly share URL (https://sticker.ly/s/...)", default: "https://sticker.ly/s/W7ES6T" }
+  ], "json", "sticker", "stickerly", "v2", "2026-08-01T10:00:00.000Z", "Stickerly", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 30),
+  createEndpoint("/api/v2/sticker/stickerly-detail", "POST", "Get detailed Sticker.ly sticker pack info via JSON body. Returns pack name, author info, sticker list with images, and pack metrics.", [
+    { name: "url", type: "string", required: true, description: "Sticker.ly share URL" }
+  ], "json", "sticker", "stickerly", "v2", "2026-08-01T10:00:00.000Z", "Stickerly", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 30),
+  createEndpoint("/api/v2/sticker/stickerly-search", "GET", "Search Sticker.ly sticker packs by keyword. Returns pack name, author, sticker count, view count, export count, thumbnail URL, and share URL.", [
+    { name: "query", type: "string", required: true, description: "Search keyword for sticker packs", default: "love" }
+  ], "json", "sticker", "stickerly", "v2", "2026-08-02T09:00:00.000Z", "Stickerly", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 30),
+  createEndpoint("/api/v2/sticker/stickerly-search", "POST", "Search Sticker.ly sticker packs via JSON body. Returns pack details including name, author, counts, and thumbnail.", [
+    { name: "query", type: "string", required: true, description: "Search keyword" }
+  ], "json", "sticker", "stickerly", "v2", "2026-08-02T09:00:00.000Z", "Stickerly", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 30),
+];
+
+const newToolEndpoints: ApiEndpoint[] = [
+  createEndpoint("/api/v2/tools/translate", "GET", "Translate text between languages using Google Translate. Supports auto-detection of source language and 100+ target languages.", [
+    { name: "text", type: "string", required: true, description: "Text to translate", default: "Hello world" },
+    { name: "source", type: "string", required: false, description: "Source language code (default: auto)", default: "auto" },
+    { name: "target", type: "string", required: false, description: "Target language code (default: id)", default: "id" }
+  ], "json", "tools", "text-tools", "v2", "2026-08-01T10:00:00.000Z", "Google Translate", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/v2/tools/kodepos", "GET", "Search Indonesian postal code information by location name. Returns postal code, village, sub-district, city, and province.", [
+    { name: "form", type: "string", required: true, description: "Location name (village, district, etc.)", default: "pasiran jaya" }
+  ], "json", "tools", "text-tools", "v2", "2026-08-02T09:00:00.000Z", "Pos Indonesia", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/v2/tools/vcc-generator", "GET", "Generate virtual credit card details for testing. Supports Visa, MasterCard, Amex, CUP, JCB, Diners, and RuPay.", [
+    { name: "type", type: "string", required: true, description: "Card type (Visa, MasterCard, Amex, CUP, JCB, Diners, RuPay)", default: "MasterCard", options: ["Visa", "MasterCard", "Amex", "CUP", "JCB", "Diners", "RuPay"] },
+    { name: "count", type: "number", required: false, description: "Number of cards (1-5, default: 1)", default: "1" }
+  ], "json", "tools", "text-tools", "v2", "2026-08-03T10:00:00.000Z", "NeaPay", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
+  createEndpoint("/api/v2/tools/ngl", "GET", "Send anonymous message to an NGL.link profile.", [
+    { name: "link", type: "string", required: true, description: "NGL.link profile URL", default: "https://ngl.link/username" },
+    { name: "text", type: "string", required: true, description: "Anonymous message to send", default: "Hello!" }
+  ], "json", "tools", "text-tools", "v2", "2026-08-04T11:00:00.000Z", "NGL", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
+];
+
 export const allEndpoints: ApiEndpoint[] = [
   // Artificial Intelligence (40+ endpoints)
   ...aiChatV0Endpoints,
@@ -2129,25 +2163,17 @@ export const allEndpoints: ApiEndpoint[] = [
   
   // Sticker
   ...stickerEndpoints,
+  
+  // New Tools
+  ...newToolEndpoints,
 ];
 
 
 // ─── STICKER ENDPOINTS ─────────────────────────────────────────────────────
 
-const stickerEndpoints: ApiEndpoint[] = [
-  createEndpoint("/api/sticker/stickerly-detail", "GET", "Get detailed Sticker.ly sticker pack info by share URL. Returns pack name, author details (name, username, bio, followers), sticker list with image URLs, view count, export count, and thumbnail.", [
-    { name: "url", type: "string", required: true, description: "Sticker.ly share URL (https://sticker.ly/s/...)", default: "https://sticker.ly/s/W7ES6T" }
-  ], "json", "sticker", "stickerly", "v2", "2026-08-01T10:00:00.000Z", "Stickerly", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 30),
-  createEndpoint("/api/sticker/stickerly-detail", "POST", "Get detailed Sticker.ly sticker pack info via JSON body. Returns pack name, author info, sticker list with images, and pack metrics.", [
-    { name: "url", type: "string", required: true, description: "Sticker.ly share URL" }
-  ], "json", "sticker", "stickerly", "v2", "2026-08-01T10:00:00.000Z", "Stickerly", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 30),
-  createEndpoint("/api/sticker/stickerly-search", "GET", "Search Sticker.ly sticker packs by keyword. Returns pack name, author, sticker count, view count, export count, thumbnail URL, and share URL.", [
-    { name: "query", type: "string", required: true, description: "Search keyword for sticker packs", default: "love" }
-  ], "json", "sticker", "stickerly", "v2", "2026-08-02T09:00:00.000Z", "Stickerly", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 30),
-  createEndpoint("/api/sticker/stickerly-search", "POST", "Search Sticker.ly sticker packs via JSON body. Returns pack details including name, author, counts, and thumbnail.", [
-    { name: "query", type: "string", required: true, description: "Search keyword" }
-  ], "json", "sticker", "stickerly", "v2", "2026-08-02T09:00:00.000Z", "Stickerly", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 30),
-];
+
+
+// ─── NEW LIGHTWEIGHT TOOL ENDPOINTS ────────────────────────────────────────
 
 
 export const allEndpointsComplete = allEndpoints;

@@ -31,6 +31,7 @@ import { registerImageProcessRoutes } from "./image-process-routes";
 import { registerSearchRoutesV2 } from "./search-routes-v2";
 import { registerStalkerRoutes } from "./stalker-routes";
 import { registerStickerRoutes } from "./sticker-routes";
+import { registerNewToolRoutes } from "./new-tools-routes";
 import { registerMovieRoutes } from "./movie-routes";
 import { downloadTikTok } from "../lib/downloaders/tiktok";
 import { downloadSnapchat } from "../lib/downloaders/snapchat";
@@ -151,6 +152,7 @@ export async function registerRoutes(
   registerSearchRoutesV2(app);
   registerStalkerRoutes(app);
   registerStickerRoutes(app);
+  registerNewToolRoutes(app);
   registerMovieRoutes(app);
   registerApiKeyRoutes(app);
 
