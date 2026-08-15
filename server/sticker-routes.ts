@@ -1,4 +1,5 @@
 import type { Express, Request, Response } from "express";
+import { buildSuccessResponse, buildErrorResponse } from "./response-builder";
 import axios from "axios";
 
 // ─── STICKERLY DETAIL ─────────────────────────────────────────────────────
@@ -105,14 +106,14 @@ export function registerStickerRoutes(app: Express): void {
   // Stickerly Detail GET
   app.get("/api/v2/sticker/stickerly-detail", async (req: Request, res: Response) => {
     const url = req.query.url as string;
-    if (!url) return res.status(400).json({ status: false, error: "Parameter 'url' required" });
+    if (!url) return res.status(400).json(buildErrorResponse(req, "Sticker", "sticker", "Parameter 'url' required", "BAD_REQUEST"));
     if (!url.startsWith("https://sticker.ly/s/")) {
       return res.status(400).json({ status: false, error: "Invalid Sticker.ly URL format. Expected: https://sticker.ly/s/..." });
     }
 
     try {
       const result = await stickerlyDetail(url.trim());
-      return res.json({ status: true, provider: "Stickerly", result });
+      return res.json(buildSuccessResponse(req, "Sticker", "sticker", { provider: "Stickerly", result }));
     } catch (e: any) {
       return res.status(500).json({ status: false, error: e.message });
     }
@@ -128,7 +129,7 @@ export function registerStickerRoutes(app: Express): void {
 
     try {
       const result = await stickerlyDetail(url.trim());
-      return res.json({ status: true, provider: "Stickerly", result });
+      return res.json(buildSuccessResponse(req, "Sticker", "sticker", { provider: "Stickerly", result }));
     } catch (e: any) {
       return res.status(500).json({ status: false, error: e.message });
     }
@@ -145,7 +146,7 @@ export function registerStickerRoutes(app: Express): void {
       if (result.length === 0) {
         return res.status(404).json({ status: false, error: "No sticker packs found" });
       }
-      return res.json({ status: true, provider: "Stickerly", total: result.length, results: result });
+      return res.json(buildSuccessResponse(req, "Sticker", "sticker", { provider: "Stickerly", total: result.length, results: result }));
     } catch (e: any) {
       return res.status(500).json({ status: false, error: e.message });
     }
@@ -162,7 +163,7 @@ export function registerStickerRoutes(app: Express): void {
       if (result.length === 0) {
         return res.status(404).json({ status: false, error: "No sticker packs found" });
       }
-      return res.json({ status: true, provider: "Stickerly", total: result.length, results: result });
+      return res.json(buildSuccessResponse(req, "Sticker", "sticker", { provider: "Stickerly", total: result.length, results: result }));
     } catch (e: any) {
       return res.status(500).json({ status: false, error: e.message });
     }

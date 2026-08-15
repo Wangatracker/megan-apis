@@ -189,15 +189,15 @@ export function responseFingerprint(_req: Request, res: Response, next: NextFunc
   const originalJson = res.json.bind(res);
   res.json = function (body: any) {
     if (body && typeof body === "object") {
-      // Clean up old creator field if it exists (from legacy route handlers)
-      if (body.creator && body.creator !== "Tracker Wanga") {
-        delete body.creator;
+      // Only add metadata if not already present (for legacy routes)
+      if (!body.api_info) {
+        // Legacy route - add basic metadata at the end
+        body.api_name = "Megan APIs";
+        body.version = "3.6.4";
+        body.creator = "Tracker Wanga";
+        body.tech = "Megan Tech";
       }
-      // Add fresh metadata
-      body.api_name = "Megan APIs";
-      body.version = "3.6.4";
-      body.creator = "Tracker Wanga";
-      body.tech = "Megan Tech";
+      // If already has api_info, don't duplicate
     }
     return originalJson(body);
   };

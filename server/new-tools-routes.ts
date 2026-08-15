@@ -1,4 +1,5 @@
 import type { Express, Request, Response } from "express";
+import { buildSuccessResponse, buildErrorResponse } from "./response-builder";
 import axios from "axios";
 import * as cheerio from "cheerio";
 
@@ -94,7 +95,7 @@ export function registerNewToolRoutes(app: Express): void {
     if (!text) return res.status(400).json({ status: false, error: "Parameter 'text' required" });
     try {
       const result = await translateText(String(text), String(source), String(target));
-      return res.json({ status: true, provider: "Google Translate", translatedText: result });
+      return res.json(buildSuccessResponse(req, "Tools", "tools", { provider: "Google Translate", translatedText: result }));
     } catch (e: any) {
       return res.status(500).json({ status: false, error: e.message });
     }
@@ -107,7 +108,7 @@ export function registerNewToolRoutes(app: Express): void {
     try {
       const result = await scrapeKodepos(form.trim());
       if (!result.length) return res.status(404).json({ status: false, error: "No postal code found" });
-      return res.json({ status: true, provider: "Pos Indonesia", results: result });
+      return res.json(buildSuccessResponse(req, "Tools", "tools", { provider: "Pos Indonesia", results: result }));
     } catch (e: any) {
       return res.status(500).json({ status: false, error: e.message });
     }
@@ -122,7 +123,7 @@ export function registerNewToolRoutes(app: Express): void {
     if (count < 1 || count > 5) return res.status(400).json({ status: false, error: "Count must be 1-5" });
     try {
       const cards = await generateVcc(type, count);
-      return res.json({ status: true, provider: "NeaPay", count: cards.length, cards });
+      return res.json(buildSuccessResponse(req, "Tools", "tools", { provider: "NeaPay", count: cards.length, cards }));
     } catch (e: any) {
       return res.status(500).json({ status: false, error: e.message });
     }
@@ -134,7 +135,7 @@ export function registerNewToolRoutes(app: Express): void {
     if (!link || !text) return res.status(400).json({ status: false, error: "Parameters 'link' and 'text' required" });
     try {
       const result = await submitNglAnswer(String(text), String(link));
-      return res.json({ status: true, provider: "NGL", result });
+      return res.json(buildSuccessResponse(req, "Tools", "tools", { provider: "NGL", result }));
     } catch (e: any) {
       return res.status(500).json({ status: false, error: e.message });
     }
