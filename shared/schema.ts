@@ -2078,6 +2078,34 @@ const newToolEndpoints: ApiEndpoint[] = [
   ], "json", "tools", "text-tools", "v2", "2026-08-04T11:00:00.000Z", "NGL", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
 ];
 
+const meganAIEndpoints: ApiEndpoint[] = [
+  createEndpoint("/api/v2/megan-ai", "GET", "Megan AI Assistant - Ask questions about Megan APIs, get endpoint recommendations, explain errors, and learn about the creator. Uses dynamic schema search to find relevant endpoints.", [
+    { name: "q", type: "string", required: true, description: "Your question about Megan APIs", default: "How do I download a TikTok video?" }
+  ], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "Megan AI", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
+  createEndpoint("/api/v2/megan-ai/stats", "GET", "Get Megan AI usage statistics - total conversations, model usage, and fallback count.", [], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "Megan AI", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+];
+
+const reviewEndpoints: ApiEndpoint[] = [
+  createEndpoint("/api/v2/review", "POST", "Add a review (1-5 stars) for any endpoint. Reviews help other users discover quality endpoints.", [
+    { name: "endpoint", type: "string", required: true, description: "Endpoint path to review", default: "/api/download/tiktok" },
+    { name: "rating", type: "number", required: true, description: "Rating 1-5", default: "5" },
+    { name: "comment", type: "string", required: false, description: "Optional comment" },
+    { name: "user_name", type: "string", required: false, description: "Your name (default: anonymous)" }
+  ], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "D1", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
+  createEndpoint("/api/v2/reviews/:endpoint", "GET", "Get all reviews for a specific endpoint with average rating.", [
+    { name: "endpoint", type: "string", required: true, description: "Endpoint path (without leading slash)", default: "download/tiktok" }
+  ], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "D1", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/v2/like/:endpoint", "POST", "Like an endpoint. Likes help identify popular endpoints.", [
+    { name: "endpoint", type: "string", required: true, description: "Endpoint path (without leading slash)", default: "download/tiktok" }
+  ], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "D1", [SC.SUCCESS, SC.SERVER_ERROR], 30),
+  createEndpoint("/api/v2/ranking", "GET", "Get top rated, most liked, and most used endpoints. Data from D1 database.", [], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "D1", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/v2/report-error", "POST", "Report an error or bug for any endpoint. Reports are logged and reviewed by the developer.", [
+    { name: "endpoint", type: "string", required: true, description: "Endpoint that has the error", default: "/api/download/instagram" },
+    { name: "error_message", type: "string", required: true, description: "Error message you received", default: "Could not download" },
+    { name: "error_details", type: "string", required: false, description: "Additional error details" }
+  ], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "D1", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
+];
+
 export const allEndpoints: ApiEndpoint[] = [
   // Artificial Intelligence (40+ endpoints)
   ...aiChatV0Endpoints,
@@ -2182,34 +2210,6 @@ export const allEndpoints: ApiEndpoint[] = [
 
 
 // ─── MEGAN AI & REVIEW ENDPOINTS ──────────────────────────────────────────
-
-const meganAIEndpoints: ApiEndpoint[] = [
-  createEndpoint("/api/v2/megan-ai", "GET", "Megan AI Assistant - Ask questions about Megan APIs, get endpoint recommendations, explain errors, and learn about the creator. Uses dynamic schema search to find relevant endpoints.", [
-    { name: "q", type: "string", required: true, description: "Your question about Megan APIs", default: "How do I download a TikTok video?" }
-  ], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "Megan AI", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
-  createEndpoint("/api/v2/megan-ai/stats", "GET", "Get Megan AI usage statistics - total conversations, model usage, and fallback count.", [], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "Megan AI", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-];
-
-const reviewEndpoints: ApiEndpoint[] = [
-  createEndpoint("/api/v2/review", "POST", "Add a review (1-5 stars) for any endpoint. Reviews help other users discover quality endpoints.", [
-    { name: "endpoint", type: "string", required: true, description: "Endpoint path to review", default: "/api/download/tiktok" },
-    { name: "rating", type: "number", required: true, description: "Rating 1-5", default: "5" },
-    { name: "comment", type: "string", required: false, description: "Optional comment" },
-    { name: "user_name", type: "string", required: false, description: "Your name (default: anonymous)" }
-  ], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "D1", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
-  createEndpoint("/api/v2/reviews/:endpoint", "GET", "Get all reviews for a specific endpoint with average rating.", [
-    { name: "endpoint", type: "string", required: true, description: "Endpoint path (without leading slash)", default: "download/tiktok" }
-  ], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "D1", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/v2/like/:endpoint", "POST", "Like an endpoint. Likes help identify popular endpoints.", [
-    { name: "endpoint", type: "string", required: true, description: "Endpoint path (without leading slash)", default: "download/tiktok" }
-  ], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "D1", [SC.SUCCESS, SC.SERVER_ERROR], 30),
-  createEndpoint("/api/v2/ranking", "GET", "Get top rated, most liked, and most used endpoints. Data from D1 database.", [], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "D1", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/v2/report-error", "POST", "Report an error or bug for any endpoint. Reports are logged and reviewed by the developer.", [
-    { name: "endpoint", type: "string", required: true, description: "Endpoint that has the error", default: "/api/download/instagram" },
-    { name: "error_message", type: "string", required: true, description: "Error message you received", default: "Could not download" },
-    { name: "error_details", type: "string", required: false, description: "Additional error details" }
-  ], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "D1", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
-];
 
 
 export const allEndpointsComplete = allEndpoints;
