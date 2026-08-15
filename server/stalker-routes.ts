@@ -10,7 +10,11 @@ import * as cheerio from "cheerio";
 async function githubStalk(username: string) {
   const response = await axios.get(`https://api.github.com/users/${username}`, {
     timeout: 10000,
-    headers: { 'User-Agent': 'Mozilla/5.0' },
+    headers: { 
+      'User-Agent': 'Megan-APIs',
+      'Accept': 'application/vnd.github.v3+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    },
   });
   return {
     username: response.data.login,
