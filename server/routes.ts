@@ -1,4 +1,4 @@
-import { getServerStatus, getAllEndpoints, searchEndpoints, getEndpointsByCategory, getCategories, getMethodStats } from "../lib/downloaders/meta-endpoints";
+import { getServerStatus, getAllEndpoints, searchEndpoints, getEndpointsByCategory, getCategories, getMethodStats, getFullServerStats } from "../lib/downloaders/meta-endpoints";
 import { registerSocialRoutes } from "./social-routes";
 import { registerMediaRoutes } from "./media-routes";
 import { getZodiacSign, getAllZodiacSigns, getZodiacByElement, getCompatibility, playRPS, guessCountry, checkCountryGuess, getWordScramble, checkScramble, startNumberGame, guessNumber } from "../lib/downloaders/zodiac-games";
@@ -1639,7 +1639,14 @@ export async function registerRoutes(
   // ─── ADMIN: Provider Management ────────────────────────────────────────────
   app.get("/api/admin/update-ytdlp", async (_req, res) => { try { const { stdout, stderr } = await execAsync("[ -f ./yt-dlp ] && ./yt-dlp --update-to stable 2>&1 || yt-dlp --update-to stable 2>&1", { timeout: 60000 }); reloadCookies(); return res.json({ success: true, creator: creatorTag, message: (stdout + stderr).trim() || "yt-dlp is already up to date" }); } catch (e: any) { return res.status(500).json({ success: false, creator: creatorTag, error: `yt-dlp update failed: ${e.message}` }); } });
   app.get("/api/admin/reload-cookies", (_req, res) => { reloadCookies(); return res.json({ success: true, creator: creatorTag, message: "Cookie cache cleared." }); });
-app.get("/api/status", (req, res) => { return res.json({ success: true, result: getServerStatus() }); });
+app.get("/api/status", async (req, res) => {
+  try {
+    const stats = await getFullServerStats();
+    return res.json({ success: true, result: stats });
+  } catch (e: any) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
 app.get("/api/endpoints", (req, res) => { return res.json({ success: true, result: getAllEndpoints() }); });
 app.get("/api/endpoints/search", (req, res) => { const q = req.query.q as string; if (!q) return res.status(400).json({ error: "Missing q" }); return res.json({ success: true, result: searchEndpoints(q) }); });
 app.get("/api/endpoints/categories", (req, res) => { return res.json({ success: true, result: getCategories() }); });
