@@ -1,4 +1,4 @@
-import { getServerStatus, getAllEndpoints, searchEndpoints, getEndpointsByCategory, getCategories, getMethodStats, getFullServerStats } from "../lib/downloaders/meta-endpoints";
+import { getServerStatus, getAllEndpoints, searchEndpoints, getEndpointsByCategory, getCategories, getMethodStats, getFullServerStats, getEndpointByPath, getEndpointsBySubcategory } from "../lib/downloaders/meta-endpoints";
 import { registerSocialRoutes } from "./social-routes";
 import { registerMediaRoutes } from "./media-routes";
 import { getZodiacSign, getAllZodiacSigns, getZodiacByElement, getCompatibility, playRPS, guessCountry, checkCountryGuess, getWordScramble, checkScramble, startNumberGame, guessNumber } from "../lib/downloaders/zodiac-games";
@@ -1652,6 +1652,23 @@ app.get("/api/endpoints/search", (req, res) => { const q = req.query.q as string
 app.get("/api/endpoints/categories", (req, res) => { return res.json({ success: true, result: getCategories() }); });
 app.get("/api/endpoints/category/:name", (req, res) => { const result = getEndpointsByCategory(req.params.name); if (!result) return res.status(404).json({ error: "Category not found" }); return res.json({ success: true, result }); });
 app.get("/api/endpoints/stats", (req, res) => { return res.json({ success: true, result: getMethodStats() }); });
+
+// Get endpoint by path
+app.get("/api/endpoints/detail", (req, res) => {
+  const path = req.query.path as string;
+  if (!path) return res.status(400).json({ error: "Missing path" });
+  const result = getEndpointByPath(path);
+  if (!result) return res.status(404).json({ error: "Endpoint not found" });
+  return res.json({ success: true, result });
+});
+
+// Get endpoints by subcategory
+app.get("/api/endpoints/category/:categoryId/:subcategoryId", (req, res) => {
+  const { categoryId, subcategoryId } = req.params;
+  const result = getEndpointsBySubcategory(categoryId, subcategoryId);
+  if (!result) return res.status(404).json({ error: "Category or subcategory not found" });
+  return res.json({ success: true, result });
+});
   app.get("/api/admin/provider-health", (_req, res) => { return res.json({ success: true, creator: creatorTag, providers: ["ytdlp", "fabdl", "cobalt", "piped", "y2mate"], note: "Providers are tried in order. Failed providers are on 5-minute cooldown." }); });
 app.get("/api/zodiac/all", (req, res) => { return res.json({ success: true, creator: "Megan APIs v3.6.4 | Tracker Wanga | Megan Tech", signs: getAllZodiacSigns() }); });
 app.get("/api/zodiac/:sign", (req, res) => { const result = getZodiacSign(req.params.sign); if (!result) return res.status(404).json({ error: "Sign not found" }); return res.json({ success: true, creator: "Megan APIs v3.6.4 | Tracker Wanga | Megan Tech", result }); });

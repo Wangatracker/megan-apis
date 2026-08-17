@@ -318,3 +318,170 @@ export function getMethodStats() {
     },
   };
 }
+
+
+// ─── GET ENDPOINT BY ID / PATH ────────────────────────────────────────────
+
+export function getEndpointByPath(path: string) {
+  const ep = allEndpoints.find(e => e.path === path);
+  if (!ep) return null;
+  
+  const category = apiCategories.find(c => c.id === ep.categoryId);
+  const subcategory = category?.subcategories.find(s => s.id === ep.subcategoryId);
+  
+  // Find similar endpoints (same category, exclude self)
+  const similar = allEndpoints
+    .filter(e => e.categoryId === ep.categoryId && e.path !== ep.path)
+    .slice(0, 5)
+    .map(e => ({
+      path: e.path,
+      method: e.method,
+      description: e.description,
+    }));
+  
+  return {
+    id: ep.path.replace(/[^a-zA-Z0-9]/g, "-"),
+    name: ep.subcategory || ep.category,
+    path: ep.path,
+    method: ep.method,
+    description: ep.description,
+    provider: ep.provider || null,
+    category: ep.category,
+    categoryId: ep.categoryId,
+    subcategory: ep.subcategory || null,
+    subcategoryId: ep.subcategoryId || null,
+    version: ep.version,
+    createdAt: ep.createdAt,
+    rateLimit: ep.rateLimit || null,
+    authentication: false,
+    parameters: ep.params.map(p => ({
+      name: p.name,
+      type: p.type,
+      required: p.required,
+      description: p.description,
+      default: p.default || null,
+      options: p.options || null,
+    })),
+    statusCodes: ep.statusCodes,
+    examples: {
+      curl: generateCurlExample(ep),
+      javascript: generateJsExample(ep),
+      python: generatePythonExample(ep),
+    },
+    similar,
+  };
+}
+
+// ─── GET ENDPOINTS BY SUBCATEGORY ────────────────────────────────────────
+
+export function getEndpointsBySubcategory(categoryId: string, subcategoryId: string) {
+  const category = apiCategories.find(c => c.id === categoryId);
+  if (!category) return null;
+  
+  const subcategory = category.subcategories.find(s => s.id === subcategoryId);
+  if (!subcategory) return null;
+  
+  const endpoints = allEndpoints.filter(e =>
+    e.categoryId === categoryId && e.subcategoryId === subcategoryId
+  );
+  
+  return {
+    category: {
+      id: category.id,
+      name: category.name,
+      description: category.description,
+    },
+    subcategory: {
+      id: subcategory.id,
+      name: subcategory.name,
+      description: subcategory.description,
+    },
+    totalEndpoints: endpoints.length,
+    endpoints: endpoints.map(e => ({
+      path: e.path,
+      method: e.method,
+      description: e.description,
+      provider: e.provider || null,
+      version: e.version,
+      params: e.params.map(p => ({
+        name: p.name,
+        type: p.type,
+        required: p.required,
+        description: p.description,
+      })),
+    })),
+  };
+}
+
+// ─── HELPER: Generate code examples ──────────────────────────────────────
+
+function generateCurlExample(ep: any): string {
+  const baseUrl = "https://apis.megan.qzz.io";
+  const apiKey = "YOUR_API_KEY";
+  
+  if (ep.method === "GET") {
+    const params = ep.params
+      .filter((p: any) => p.required)
+      .map((p: any) => `${p.name}=${p.default || "value"}`)
+      .join("&");
+    return `curl "${baseUrl}${ep.path}?${params ? params + "&" : ""}api_key=${apiKey}"`;
+  }
+  
+  if (ep.method === "POST") {
+    const bodyParams = ep.params.filter((p: any) => p.required);
+    const body = bodyParams.length > 0
+      ? bodyParams.map((p: any) => `    "${p.name}": "${p.default || "value"}"`).join(",\n")
+      : "";
+    
+    return `curl -X POST "${baseUrl}${ep.path}?api_key=${apiKey}" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+${body}
+  }'`;
+  }
+  
+  return `curl "${baseUrl}${ep.path}?api_key=${apiKey}"`;
+}
+
+function generateJsExample(ep: any): string {
+  const baseUrl = "https://apis.megan.qzz.io";
+  const apiKey = "YOUR_API_KEY";
+  
+  if (ep.method === "GET") {
+    return `fetch("${baseUrl}${ep.path}?api_key=${apiKey}")
+  .then(r => r.json())
+  .then(console.log)`;
+  }
+  
+  return `fetch("${baseUrl}${ep.path}?api_key=${apiKey}", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({})
+})
+  .then(r => r.json())
+  .then(console.log)`;
+}
+
+function generatePythonExample(ep: any): string {
+  const baseUrl = "https://apis.megan.qzz.io";
+  const apiKey = "YOUR_API_KEY";
+  
+  if (ep.method === "GET") {
+    return `import requests
+
+r = requests.get(
+    "${baseUrl}${ep.path}",
+    params={"api_key": "${apiKey}"}
+)
+print(r.json())`;
+  }
+  
+  return `import requests
+
+r = requests.post(
+    "${baseUrl}${ep.path}",
+    params={"api_key": "${apiKey}"},
+    json={}
+)
+print(r.json())`;
+}
