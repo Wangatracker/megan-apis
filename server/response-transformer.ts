@@ -9,7 +9,7 @@ const API_INFO = {
   version: "3.7.0",
   creator: "Tracker Wanga",
   tech: "Megan Tech",
-  channel_url: "https://whatsapp.com/channel/0029Vb0YxZaJZg4GJQYJYl1o",
+  channel_url: "https://whatsapp.com/channel/0029Vb7FYNA8qIzs2P5dcE37",
 } as const;
 
 const STATUS_CODES: Record<number, string> = {

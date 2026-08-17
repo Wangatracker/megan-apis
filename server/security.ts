@@ -209,7 +209,7 @@ export function responseFingerprint(req: Request, res: Response, next: NextFunct
         version: "3.7.0",
         creator: "Tracker Wanga",
         tech: "Megan Tech",
-        channel_url: "https://whatsapp.com/channel/0029Vb0YxZaJZg4GJQYJYl1o",
+        channel_url: "https://whatsapp.com/channel/0029Vb7FYNA8qIzs2P5dcE37",
       },
       status: {
         success: statusCode < 400,
