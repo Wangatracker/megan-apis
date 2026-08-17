@@ -15,7 +15,7 @@ const MEGAN_INFO = {
   instagram: "https://www.instagram.com/zeen.whispers",
   facebook: "https://www.facebook.com/profile.php?id=100086220715987",
   github: "https://github.com/TrackerWanga",
-  projects: ["Megan APIs (873 endpoints)", "meganapis.space"],
+  projects: ["Megan APIs (873 endpoints)", "apis.megan.qzz.io"],
 };
 
 // ─── SEARCH SCHEMA ─────────────────────────────────────────────────────────
