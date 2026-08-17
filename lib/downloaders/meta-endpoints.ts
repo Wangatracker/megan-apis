@@ -186,7 +186,7 @@ export function getAllEndpoints() {
       name: cat.name,
       description: cat.description,
       icon: cat.icon,
-      count: allEndpoints.filter(e => e.category === cat.id).length,
+      count: allEndpoints.filter(e => e.categoryId === cat.id).length,
       subcategories: cat.subcategories.map(sub => ({
         id: sub.id,
         name: sub.name,
@@ -251,7 +251,7 @@ export function getEndpointsByCategory(categoryName: string) {
   
   if (!cat) return null;
   
-  const eps = allEndpoints.filter(e => e.category === cat.id);
+  const eps = allEndpoints.filter(e => e.categoryId === cat.id);
   
   return {
     category: cat.name,
@@ -291,7 +291,7 @@ export function getCategories() {
       name: cat.name,
       description: cat.description,
       icon: cat.icon,
-      endpointCount: allEndpoints.filter(e => e.category === cat.id).length,
+      endpointCount: allEndpoints.filter(e => e.categoryId === cat.id).length,
       subcategoryCount: cat.subcategories.length,
     })),
   };
@@ -309,7 +309,7 @@ export function getMethodStats() {
     byCategory: apiCategories.map(cat => ({
       id: cat.id,
       name: cat.name,
-      count: allEndpoints.filter(e => e.category === cat.id).length,
+      count: allEndpoints.filter(e => e.categoryId === cat.id).length,
     })),
     byVersion: {
       v0: allEndpoints.filter(e => e.version === "v0").length,
