@@ -34,6 +34,7 @@ import { registerStickerRoutes } from "./sticker-routes";
 import { registerNewToolRoutes } from "./new-tools-routes";
 import { registerMeganAIRoutes } from "./megan-ai-routes";
 import { registerDashboardRoutes } from "./dashboard-routes";
+import { registerReviewRoutes } from "./review-routes";
 import { registerMovieRoutes } from "./movie-routes";
 import { downloadTikTok } from "../lib/downloaders/tiktok";
 import { downloadSnapchat } from "../lib/downloaders/snapchat";
@@ -157,6 +158,7 @@ export async function registerRoutes(
   registerNewToolRoutes(app);
   registerMeganAIRoutes(app);
   registerDashboardRoutes(app);
+  registerReviewRoutes(app);
   registerMovieRoutes(app);
   registerApiKeyRoutes(app);
 

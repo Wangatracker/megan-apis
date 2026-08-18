@@ -56,9 +56,10 @@ export function registerReviewRoutes(app: Express): void {
     }
   });
   
-  // POST /api/v2/like/:endpoint - Like an endpoint
-  app.post("/api/v2/like/:endpoint", async (req: Request, res: Response) => {
-    const endpoint = "/" + req.params.endpoint;
+  // POST /api/v2/like - Like an endpoint (endpoint in body or query)
+  app.post("/api/v2/like", async (req: Request, res: Response) => {
+    const endpoint = (req.body?.endpoint as string) || (req.query.endpoint as string);
+    if (!endpoint) return res.status(400).json({ success: false, error: "endpoint required" });
     
     try {
       await d1Execute(
@@ -80,29 +81,39 @@ export function registerReviewRoutes(app: Express): void {
   // GET /api/v2/ranking - Get top rated/most liked endpoints
   app.get("/api/v2/ranking", async (_req: Request, res: Response) => {
     try {
-      const topRated = await d1Query(`
-        SELECT endpoint, AVG(rating) as avg_rating, COUNT(*) as review_count
-        FROM api_reviews
-        GROUP BY endpoint
-        ORDER BY avg_rating DESC, review_count DESC
-        LIMIT 10
-      `);
+      let topRated: any[] = [];
+      let mostLiked: any[] = [];
+      let mostUsed: any[] = [];
       
-      const mostLiked = await d1Query(`
-        SELECT endpoint, COUNT(*) as like_count
-        FROM api_likes
-        GROUP BY endpoint
-        ORDER BY like_count DESC
-        LIMIT 10
-      `);
+      try {
+        topRated = await d1Query(`
+          SELECT endpoint, AVG(rating) as avg_rating, COUNT(*) as review_count
+          FROM api_reviews
+          GROUP BY endpoint
+          ORDER BY avg_rating DESC, review_count DESC
+          LIMIT 10
+        `);
+      } catch {}
       
-      const mostUsed = await d1Query(`
-        SELECT endpoint, COUNT(*) as usage_count, AVG(response_time_ms) as avg_ms
-        FROM api_usage
-        GROUP BY endpoint
-        ORDER BY usage_count DESC
-        LIMIT 10
-      `);
+      try {
+        mostLiked = await d1Query(`
+          SELECT endpoint, COUNT(*) as like_count
+          FROM api_likes
+          GROUP BY endpoint
+          ORDER BY like_count DESC
+          LIMIT 10
+        `);
+      } catch {}
+      
+      try {
+        mostUsed = await d1Query(`
+          SELECT endpoint, COUNT(*) as usage_count, AVG(response_time_ms) as avg_ms
+          FROM api_usage
+          GROUP BY endpoint
+          ORDER BY usage_count DESC
+          LIMIT 10
+        `);
+      } catch {}
       
       return res.json({
         success: true,
@@ -111,7 +122,13 @@ export function registerReviewRoutes(app: Express): void {
         most_used: mostUsed,
       });
     } catch (e: any) {
-      return res.status(500).json({ success: false, error: e.message });
+      return res.json({
+        success: true,
+        top_rated: [],
+        most_liked: [],
+        most_used: [],
+        note: "Analytics temporarily unavailable",
+      });
     }
   });
   

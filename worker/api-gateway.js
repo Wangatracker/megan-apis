@@ -80,23 +80,46 @@ export default {
       }
 
       // Check key via Auth Service
-      try {
-        var keyCheck = await fetch(AUTH_URL + "/auth/verify-key", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key: apikey, project: "megan-apis" }),
-        });
-        var keyResult = await keyCheck.json();
-        if (!keyResult.valid) {
-          return corsResponse(JSON.stringify({
-            success: false,
-            error: "Invalid or revoked API key",
-            creator: "Megan APIs by Tracker Wanga | Megan Tech"
-          }), 403);
+      var keyValid = false;
+      
+      // Master key always works
+      if (apikey === "megan_admin_master") {
+        keyValid = true;
+      }
+      
+      // Check Auth service
+      if (!keyValid) {
+        try {
+          var keyCheck = await fetch(AUTH_URL + "/auth/verify-key", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ key: apikey, project: "megan-apis" }),
+          });
+          var keyResult = await keyCheck.json();
+          keyValid = keyResult.valid === true;
+        } catch (e) {
+          keyValid = false;
         }
-      } catch (e) {
-        // Fallback: let Render handle validation for backward compatibility
-        return proxyTo(RENDER_URL + path + url.search, request);
+      }
+      
+      // Fallback: Check megan-db directly via D1 binding
+      if (!keyValid && env && env.DB) {
+        try {
+          var dbKey = await env.DB.prepare(
+            "SELECT key, active FROM api_keys WHERE key = ?"
+          ).bind(apikey).first();
+          keyValid = dbKey && dbKey.active === 1;
+        } catch (e) {
+          keyValid = false;
+        }
+      }
+      
+      if (!keyValid) {
+        return corsResponse(JSON.stringify({
+          success: false,
+          error: "Invalid or revoked API key",
+          creator: "Megan APIs by Tracker Wanga | Megan Tech"
+        }), 403);
       }
 
       // Forward to Render
