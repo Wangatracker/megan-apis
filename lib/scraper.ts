@@ -320,13 +320,13 @@ async function ytdlpFileConvert(videoId: string, format: "mp3" | "mp4"): Promise
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const mp3Providers: ConvertFn[] = [
-  ytdlpDirectUrl, flvtoConvert, ytdlpFileConvert, fabdlConvert,
-  invidiousConvert, cobaltConvert, pipedConvert,
+  flvtoConvert, ytdlpDirectUrl, fabdlConvert, invidiousConvert,
+  cobaltConvert, pipedConvert, ytdlpFileConvert,
 ];
 
 const mp4Providers: ConvertFn[] = [
-  ytdlpDirectUrl, fabdlConvert, ytdlpFileConvert, invidiousConvert,
-  cobaltConvert, pipedConvert, flvtoConvert,
+  flvtoConvert, ytdlpDirectUrl, fabdlConvert, invidiousConvert,
+  cobaltConvert, pipedConvert, ytdlpFileConvert,
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
