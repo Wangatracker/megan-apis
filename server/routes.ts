@@ -1741,7 +1741,41 @@ app.get("/api/tools/dns-inspector", async (req, res) => { try { const domain = r
 app.get("/api/tools/wifi-scan", (req, res) => { try { const result = wifiScan(); return res.json({ success: true, creator: "Megan APIs v3.6.4 | Tracker Wanga | Megan Tech", result }); } catch (e: any) { return res.status(500).json({ error: e.message }); } });
 
 app.post("/api/scrape/full", async (req, res) => { try { const { url, options } = req.body || {}; if (!url) return res.status(400).json({ error: "Missing url in body" }); const result = await masterScrape(url, options || {}); return res.json({ success: true, creator: "Megan APIs v3.6.4 | Tracker Wanga | Megan Tech", result }); } catch (e: any) { return res.status(500).json({ error: e.message }); } });
-  app.get("/proxy", async (req, res) => { const url = req.query.url as string; if (!url) return res.status(400).json({ error: "Missing url param" }); let origin = "https://www.youtube.com"; try { origin = new URL(url).origin; } catch {} const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"; const upstreamHeaders: Record<string, string> = { "User-Agent": UA, "Accept": "*/*", "Accept-Language": "en-US,en;q=0.9", "Accept-Encoding": "identity", "Referer": origin + "/", "Origin": origin, "Sec-Fetch-Dest": "video", "Sec-Fetch-Mode": "no-cors", "Sec-Fetch-Site": "cross-site", "DNT": "1", "Connection": "keep-alive" }; const rangeHeader = req.headers.range; if (rangeHeader) upstreamHeaders["Range"] = rangeHeader; try { const response = await fetch(url, { headers: upstreamHeaders, redirect: "follow" }); if (response.status === 403 || response.status === 401) return res.status(response.status).json({ error: `Upstream blocked (${response.status})` }); if (!response.ok && response.status !== 206) return res.status(response.status).json({ error: `Upstream returned ${response.status}` }); const contentType = response.headers.get("content-type") || "application/octet-stream"; res.setHeader("Content-Type", contentType); res.setHeader("Cache-Control", "no-cache"); res.setHeader("Access-Control-Allow-Origin", "*"); res.setHeader("Accept-Ranges", "bytes"); res.status(response.status); if (!response.body) return res.status(502).json({ error: "No response body" }); const { Readable } = await import("stream"); const nodeStream = Readable.fromWeb(response.body as import("stream/web").ReadableStream); nodeStream.pipe(res); nodeStream.on("error", (err: any) => { if (!res.headersSent) res.status(500).json({ error: err.message }); }); } catch (err: any) { if (!res.headersSent) res.status(500).json({ error: err.message }); } });
+  app.get("/proxy", async (req, res) => {
+    const url = req.query.url as string;
+    if (!url) return res.status(400).json({ error: "Missing url param" });
+    const https = require('https');
+    const http = require('http');
+    let targetUrl: URL;
+    try { targetUrl = new URL(url); } catch { return res.status(400).json({ error: "Invalid URL" }); }
+    const headers: Record<string, string> = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "Accept": "*/*", "Accept-Language": "en-US,en;q=0.9",
+      "Referer": "https://www.youtube.com/", "Origin": "https://www.youtube.com", "Connection": "keep-alive",
+    };
+    if (req.headers.range) headers["Range"] = req.headers.range;
+    const options = { hostname: targetUrl.hostname, path: targetUrl.pathname + targetUrl.search, method: 'GET', headers, timeout: 60000 };
+    const protocol = targetUrl.protocol === 'https:' ? https : http;
+    const proxyReq = protocol.request(options, (proxyRes: any) => {
+      if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
+        const redirectUrl = new URL(proxyRes.headers.location, targetUrl);
+        return res.redirect(`/proxy?url=${encodeURIComponent(redirectUrl.toString())}`);
+      }
+      res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'video/mp4');
+      if (proxyRes.headers['content-length']) res.setHeader('Content-Length', proxyRes.headers['content-length']);
+      if (proxyRes.headers['content-range']) res.setHeader('Content-Range', proxyRes.headers['content-range']);
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
+      res.writeHead(proxyRes.statusCode || 200);
+      proxyRes.pipe(res);
+    });
+    proxyReq.on('error', (err: any) => { if (!res.headersSent) res.status(502).json({ error: err.message }); });
+    proxyReq.on('timeout', () => { proxyReq.destroy(); if (!res.headersSent) res.status(504).json({ error: 'Gateway timeout' }); });
+    proxyReq.end();
+  });
+
 
 
 app.get("/download-file", async (req, res) => {
