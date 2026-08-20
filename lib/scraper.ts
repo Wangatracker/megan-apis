@@ -3,6 +3,7 @@ import { promisify } from "util";
 import { existsSync, mkdirSync, readdirSync } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
+import youtubedl from 'youtube-dl-exec';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS & CONFIG
@@ -140,20 +141,27 @@ type ConvertFn = (videoId: string, format: "mp3" | "mp4") => Promise<{ downloadU
 
 // ─── yt-dlp Direct (no disk, fastest) ────────────────────────────────────────
 async function ytdlpDirectUrl(videoId: string, format: "mp3" | "mp4"): Promise<{ downloadUrl: string; title: string }> {
-  const ytdlpBin = existsSync("./yt-dlp") ? "./yt-dlp" : "yt-dlp";
-  const formatArg = format === "mp3" ? "bestaudio/best" : "best[height<=720]/best";
-  const cmd = `${ytdlpBin} ${ytdlpCookies()} --no-warnings --force-ipv4 --extractor-args "youtube:player_client=android_music,android,tv_embedded,ios,mweb,web" --socket-timeout 30 --print title -f "${formatArg}" -g "https://www.youtube.com/watch?v=${videoId}" 2>&1`;
-  
-  let stdout: string;
-  try { ({ stdout } = await execAsync(cmd, { timeout: 30000 })); }
-  catch (e: any) { throw new Error(`ytdlpDirect: ${(e.stderr || e.message || "unknown").substring(0, 200)}`); }
-  
-  const lines = stdout.trim().split("\n").filter(Boolean);
-  if (lines.length < 2) throw new Error("ytdlpDirect: no URL returned");
-  const title = lines[0]; const downloadUrl = lines[lines.length - 1];
-  if (!downloadUrl?.startsWith("http")) throw new Error("ytdlpDirect: invalid URL");
-  if (downloadUrl.includes(".m3u8") || downloadUrl.includes("manifest")) throw new Error("ytdlpDirect: HLS not supported");
-  return { downloadUrl, title };
+  try {
+    const formatArg = format === "mp3" ? "bestaudio/best" : "best[height<=720]/best";
+    const result = await youtubedl(`https://www.youtube.com/watch?v=${videoId}`, {
+      noWarnings: true,
+      forceIpv4: true,
+      extractorArgs: "youtube:player_client=android_music,android,tv_embedded,ios,mweb,web",
+      socketTimeout: 30,
+      print: "title",
+      format: formatArg,
+      getUrl: true,
+    });
+    const lines = result.trim().split("\n").filter(Boolean);
+    if (lines.length < 2) throw new Error("ytdlpDirect: no URL returned");
+    const title = lines[0];
+    const downloadUrl = lines[lines.length - 1];
+    if (!downloadUrl?.startsWith("http")) throw new Error("ytdlpDirect: invalid URL");
+    if (downloadUrl.includes(".m3u8") || downloadUrl.includes("manifest")) throw new Error("ytdlpDirect: HLS not supported");
+    return { downloadUrl, title };
+  } catch (e: any) {
+    throw new Error(`ytdlpDirect: ${(e.stderr || e.message || "unknown").substring(0, 200)}`);
+  }
 }
 
 // ─── FabDL ──────────────────────────────────────────────────────────────────
@@ -381,37 +389,42 @@ export async function getDownloadInfo(url: string, format: "mp3" | "mp4" = "mp3"
 
 async function ytdlpRichSearch(query: string, limit = 50): Promise<{ query: string; items: any[] }> {
   const sanitized = query.replace(/[^a-zA-Z0-9\s\-_.,'&!?()]/g, "").substring(0, 200);
-  const ytdlpBin = existsSync("./yt-dlp") ? "./yt-dlp" : "yt-dlp";
-  const cmd = `${ytdlpBin} ${ytdlpCookies()} --no-warnings --flat-playlist --dump-json --extractor-args "youtube:player_client=android_music,android,tv_embedded,ios,mweb,web" 'ytsearch${limit}:${sanitized.replace(/'/g, "'\\''")}' 2>&1`;
-  
-  let stdout: string;
-  try { ({ stdout } = await execAsync(cmd, { timeout: 30000, maxBuffer: 20 * 1024 * 1024 })); }
-  catch (e: any) { throw new Error(`search failed: ${(e.stderr || e.message || "unknown").substring(0, 200)}`); }
-
-  const items: any[] = [];
-  for (const line of stdout.trim().split("\n").filter(Boolean)) {
-    try {
-      const data = JSON.parse(line);
-      if (!data.id || data.id.length !== 11) continue;
-      const dur = data.duration || 0;
-      const views = data.view_count || 0;
-      items.push({
-        title: data.title || "Unknown",
-        id: data.id,
-        youtubeUrl: `https://www.youtube.com/watch?v=${data.id}`,
-        thumbnail: data.thumbnail || `https://i.ytimg.com/vi/${data.id}/hqdefault.jpg`,
-        thumbnailHD: `https://i.ytimg.com/vi/${data.id}/maxresdefault.jpg`,
-        duration: dur > 0 ? `${Math.floor(dur/60)}:${String(dur%60).padStart(2,"0")}` : "",
-        durationSeconds: dur,
-        views,
-        viewsFormatted: views > 0 ? Number(views).toLocaleString() : "",
-        channelTitle: data.channel || data.uploader || "Unknown",
-        uploadDate: data.upload_date || null,
-        source: "yt",
-      });
-    } catch {}
+  try {
+    const result = await youtubedl(`ytsearch${limit}:${sanitized}`, {
+      noWarnings: true,
+      flatPlaylist: true,
+      dumpJson: true,
+      extractorArgs: "youtube:player_client=android_music,android,tv_embedded,ios,mweb,web",
+      forceIpv4: true,
+      socketTimeout: 30,
+    });
+    const items: any[] = [];
+    for (const line of result.trim().split("\n").filter(Boolean)) {
+      try {
+        const data = JSON.parse(line);
+        if (!data.id || data.id.length !== 11) continue;
+        const dur = data.duration || 0;
+        const views = data.view_count || 0;
+        items.push({
+          title: data.title || "Unknown",
+          id: data.id,
+          youtubeUrl: `https://www.youtube.com/watch?v=${data.id}`,
+          thumbnail: data.thumbnail || `https://i.ytimg.com/vi/${data.id}/hqdefault.jpg`,
+          thumbnailHD: `https://i.ytimg.com/vi/${data.id}/maxresdefault.jpg`,
+          duration: dur > 0 ? `${Math.floor(dur/60)}:${String(dur%60).padStart(2,"0")}` : "",
+          durationSeconds: dur,
+          views,
+          viewsFormatted: views > 0 ? Number(views).toLocaleString() : "",
+          channelTitle: data.channel || data.uploader || "Unknown",
+          uploadDate: data.upload_date || null,
+          source: "yt",
+        });
+      } catch {}
+    }
+    return { query, items };
+  } catch (e: any) {
+    throw new Error(`search failed: ${(e.stderr || e.message || "unknown").substring(0, 200)}`);
   }
-  return { query, items };
 }
 
 export async function searchSongs(query: string) {
