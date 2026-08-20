@@ -1742,6 +1742,46 @@ app.get("/api/tools/wifi-scan", (req, res) => { try { const result = wifiScan();
 
 app.post("/api/scrape/full", async (req, res) => { try { const { url, options } = req.body || {}; if (!url) return res.status(400).json({ error: "Missing url in body" }); const result = await masterScrape(url, options || {}); return res.json({ success: true, creator: "Megan APIs v3.6.4 | Tracker Wanga | Megan Tech", result }); } catch (e: any) { return res.status(500).json({ error: e.message }); } });
   app.get("/proxy", async (req, res) => { const url = req.query.url as string; if (!url) return res.status(400).json({ error: "Missing url param" }); let origin = "https://www.youtube.com"; try { origin = new URL(url).origin; } catch {} const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"; const upstreamHeaders: Record<string, string> = { "User-Agent": UA, "Accept": "*/*", "Accept-Language": "en-US,en;q=0.9", "Accept-Encoding": "identity", "Referer": origin + "/", "Origin": origin, "Sec-Fetch-Dest": "video", "Sec-Fetch-Mode": "no-cors", "Sec-Fetch-Site": "cross-site", "DNT": "1", "Connection": "keep-alive" }; const rangeHeader = req.headers.range; if (rangeHeader) upstreamHeaders["Range"] = rangeHeader; try { const response = await fetch(url, { headers: upstreamHeaders, redirect: "follow" }); if (response.status === 403 || response.status === 401) return res.status(response.status).json({ error: `Upstream blocked (${response.status})` }); if (!response.ok && response.status !== 206) return res.status(response.status).json({ error: `Upstream returned ${response.status}` }); const contentType = response.headers.get("content-type") || "application/octet-stream"; res.setHeader("Content-Type", contentType); res.setHeader("Cache-Control", "no-cache"); res.setHeader("Access-Control-Allow-Origin", "*"); res.setHeader("Accept-Ranges", "bytes"); res.status(response.status); if (!response.body) return res.status(502).json({ error: "No response body" }); const { Readable } = await import("stream"); const nodeStream = Readable.fromWeb(response.body as import("stream/web").ReadableStream); nodeStream.pipe(res); nodeStream.on("error", (err: any) => { if (!res.headersSent) res.status(500).json({ error: err.message }); }); } catch (err: any) { if (!res.headersSent) res.status(500).json({ error: err.message }); } });
+
+
+app.get("/download-file", async (req, res) => {
+  const url = req.query.url as string;
+  if (!url) return res.status(400).json({ error: "Missing url param" });
+  
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "*/*",
+        "Referer": "https://www.youtube.com/",
+        "Origin": "https://www.youtube.com",
+      },
+      redirect: "follow",
+    });
+    
+    if (!response.ok && response.status !== 206) {
+      return res.status(response.status).json({ error: `Upstream returned ${response.status}` });
+    }
+    
+    const contentType = response.headers.get("content-type") || "video/mp4";
+    const contentLength = response.headers.get("content-length");
+    
+    res.setHeader("Content-Type", contentType);
+    if (contentLength) res.setHeader("Content-Length", contentLength);
+    res.setHeader("Content-Disposition", 'attachment; filename="video.mp4"');
+    res.setHeader("Accept-Ranges", "bytes");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.status(206);
+    
+    if (!response.body) return res.status(502).json({ error: "No response body" });
+    
+    const { Readable } = await import("stream");
+    const nodeStream = Readable.fromWeb(response.body as import("stream/web").ReadableStream);
+    nodeStream.pipe(res);
+  } catch (err: any) {
+    if (!res.headersSent) res.status(500).json({ error: err.message });
+  }
+});
 app.post("/api/tools/deobfuscate", async (req, res) => { try { const { code } = req.body || {}; if (!code) return res.status(400).json({ error: "Missing code in body" }); const result = deobfuscate(code); return res.json({ success: true, creator: "Megan APIs v3.6.4 | Tracker Wanga | Megan Tech", result }); } catch (e: any) { return res.status(500).json({ error: e.message }); } });
 app.post("/api/tools/deminify", async (req, res) => { try { const { code, language } = req.body || {}; if (!code) return res.status(400).json({ error: "Missing code in body" }); const result = deminify(code, language || "js"); return res.json({ success: true, creator: "Megan APIs v3.6.4 | Tracker Wanga | Megan Tech", result }); } catch (e: any) { return res.status(500).json({ error: e.message }); } });
 app.post("/api/tools/run-js", async (req, res) => { try { const { code, data } = req.body || {}; if (!code) return res.status(400).json({ error: "Missing code in body" }); const result = runInSandbox(code, data); return res.json({ success: true, creator: "Megan APIs v3.6.4 | Tracker Wanga | Megan Tech", result }); } catch (e: any) { return res.status(500).json({ error: e.message }); } });

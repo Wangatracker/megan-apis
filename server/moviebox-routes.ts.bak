@@ -6,13 +6,8 @@ import axios from "axios";
 // ============================================
 
 const MOVIEBOX_BASE = 'https://h5-api.aoneroom.com';
-const MOVIEBOX_PLAY_DOMAINS = [
-  'https://themoviebox.xyz',
-  'https://netfilm.world',
-  'https://123movienow.cc',
-];
+const MOVIEBOX_PLAY = 'https://themoviebox.xyz';
 const MOVIEBOX_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
-const STATIC_UUID = 'd8c3539e-2e46-4000-af20-7046a856e30a';
 
 const RANKING_LISTS = {
   TRENDING_NOW: "872031290915189720",
@@ -40,57 +35,36 @@ const RANKING_LISTS = {
   SEA_ADVENTURE: "6708972608207443352"
 };
 
-// Helper: random delay to feel human
-function randomDelay(min = 100, max = 500) {
-  return new Promise(r => setTimeout(r, min + Math.random() * (max - min)));
-}
-
 class MovieboxClient {
   private token: string | null = null;
-  private tokenExpiry: number = 0;
 
   async initToken(): Promise<string> {
-    // Try multiple endpoints to get a token
-    const endpoints = [
-      `${MOVIEBOX_BASE}/wefeed-h5api-bff/home?host=themoviebox.xyz`,
-      `${MOVIEBOX_BASE}/wefeed-h5api-bff/home?host=moviebox.ph`,
-    ];
+    const response = await axios.get(`${MOVIEBOX_BASE}/wefeed-h5api-bff/home?host=themoviebox.xyz`, {
+      timeout: 15000,
+      headers: { 'User-Agent': MOVIEBOX_UA }
+    });
 
-    for (const url of endpoints) {
-      try {
-        const response = await axios.get(url, {
-          timeout: 10000,
-          headers: { 'User-Agent': MOVIEBOX_UA, 'Accept': 'application/json' }
-        });
-
-        const setCookie = response.headers['set-cookie']?.join('; ') || '';
-        const tokenMatch = setCookie.match(/token=([^;]+)/);
-        if (tokenMatch) {
-          this.token = tokenMatch[1];
-          this.tokenExpiry = Date.now() + (90 * 24 * 60 * 60 * 1000);
-          return this.token;
-        }
-
-        const xUser = response.headers['x-user'];
-        if (xUser) {
-          const parsed = JSON.parse(xUser);
-          if (parsed.token) {
-            this.token = parsed.token;
-            this.tokenExpiry = Date.now() + (90 * 24 * 60 * 60 * 1000);
-            return this.token;
-          }
-        }
-      } catch (e) {
-        console.log(`  Token failed for ${url}: ${(e as any).message}`);
-      }
-      await randomDelay(200, 400);
+    const setCookie = response.headers['set-cookie']?.join('; ') || '';
+    const tokenMatch = setCookie.match(/token=([^;]+)/);
+    if (tokenMatch) {
+      this.token = tokenMatch[1];
+      return this.token;
     }
 
-    throw new Error('Failed to get token from all endpoints');
+    const xUser = response.headers['x-user'];
+    if (xUser) {
+      const parsed = JSON.parse(xUser);
+      if (parsed.token) {
+        this.token = parsed.token;
+        return this.token;
+      }
+    }
+
+    throw new Error('Failed to get token');
   }
 
   async getToken(): Promise<string> {
-    if (!this.token || Date.now() > this.tokenExpiry) {
+    if (!this.token) {
       return this.initToken();
     }
     return this.token;
@@ -102,10 +76,9 @@ class MovieboxClient {
       'User-Agent': MOVIEBOX_UA,
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
     };
 
-    const config: any = { timeout: 15000, headers };
+    const config: any = { timeout: 20000, headers };
 
     if (method === 'POST') {
       config.method = 'POST';
@@ -141,49 +114,17 @@ class MovieboxClient {
     const slug = detailPath.split('/').filter(Boolean).pop() || detailPath;
     const token = await this.getToken();
 
-    // Try multiple play domains
-    for (const domain of MOVIEBOX_PLAY_DOMAINS) {
-      try {
-        const response = await axios.get(`${domain}/wefeed-h5api-bff/subject/play`, {
-          timeout: 10000,
-          headers: {
-            'User-Agent': MOVIEBOX_UA,
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Referer': `${domain}/spa/videoPlayPage/movies/${slug}`,
-            'Cookie': `uuid=${STATIC_UUID}; token=${token}`,
-          },
-          params: { subjectId, se, ep, detailPath, streamSignType: 1 }
-        });
+    const response = await axios.get(`${MOVIEBOX_PLAY}/wefeed-h5api-bff/subject/play`, {
+      timeout: 20000,
+      headers: {
+        'User-Agent': MOVIEBOX_UA,
+        'Authorization': `Bearer ${token}`,
+        'Referer': `${MOVIEBOX_PLAY}/movies/${slug}`,
+      },
+      params: { subjectId, se, ep, detailPath, streamSignType: 1 }
+    });
 
-        if (response.data?.code === 0 && response.data?.data?.streams?.length > 0) {
-          console.log(`  Stream success from ${domain}`);
-          return response.data;
-        }
-        console.log(`  ${domain}: no streams (code ${response.data?.code})`);
-      } catch (e) {
-        console.log(`  ${domain}: ${(e as any).message}`);
-      }
-      await randomDelay(150, 300);
-    }
-
-    // Return a clean empty response instead of throwing
-    return {
-      code: 0,
-      message: 'ok',
-      data: {
-        streams: [],
-        freeNum: 0,
-        limited: true,
-        limitedCode: 'no_streams_available',
-        dash: [],
-        hls: [],
-        hasResource: false,
-        vipLocked: false,
-        codecPriority: [],
-        playConfig: { adFree: false, maxResolution: 0 }
-      }
-    };
+    return response.data;
   }
 
   async getRanking(rankingId: string, page = 1) {
@@ -258,7 +199,7 @@ export function registerMovieboxRoutes(app: Express): void {
         parseInt(ep as string) || 0
       );
 
-      if (result.data?.streams?.length > 0) {
+      if (result.data?.streams) {
         const host = req.headers.host || 'apis.megan.qzz.io';
         const protocol = req.headers['x-forwarded-proto'] || 'https';
         const baseUrl = `${protocol}://${host}`;
@@ -296,7 +237,8 @@ export function registerMovieboxRoutes(app: Express): void {
     });
   });
 
-  // Stream Proxy
+
+  // Stream Proxy (uses https.request for better control)
   app.get('/api/v2/moviebox/proxy', async (req: Request, res: Response) => {
     const url = req.query.url as string;
     if (!url) return res.status(400).json({ status: false, error: "Parameter 'url' required" });
@@ -312,16 +254,15 @@ export function registerMovieboxRoutes(app: Express): void {
     const http = require('http');
 
     const headers = {
-      'User-Agent': MOVIEBOX_UA,
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
       'Accept': '*/*',
       'Origin': 'https://themoviebox.xyz',
       'Referer': 'https://themoviebox.xyz/',
-      'Cookie': `uuid=${STATIC_UUID}`,
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'Connection': 'keep-alive',
+      'X-App-Version': '3.7.0',
+      'X-User': '{"token":"","userId":"0","userType":0,"appType":3}',
     };
 
+    // Pass through Range header for streaming
     if (req.headers.range) {
       headers['Range'] = req.headers.range;
     }
@@ -337,11 +278,13 @@ export function registerMovieboxRoutes(app: Express): void {
     const protocol = targetUrl.protocol === 'https:' ? https : http;
 
     const proxyReq = protocol.request(options, (proxyRes: any) => {
+      // Handle redirects
       if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
         const redirectUrl = new URL(proxyRes.headers.location, targetUrl);
         return res.redirect(`/api/v2/moviebox/proxy?url=${encodeURIComponent(redirectUrl.toString())}`);
       }
 
+      // Set response headers
       res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'video/mp4');
       if (proxyRes.headers['content-length']) {
         res.setHeader('Content-Length', proxyRes.headers['content-length']);
@@ -370,7 +313,7 @@ export function registerMovieboxRoutes(app: Express): void {
     proxyReq.end();
   });
 
-  console.log("✅ Moviebox Routes Registered (v3.7.1 - Multi-domain fallback):");
+  console.log("✅ Moviebox Routes Registered:");
   console.log("  GET /api/v2/search/moviebox");
   console.log("  GET /api/v2/moviebox/home");
   console.log("  GET /api/v2/moviebox/trending");
