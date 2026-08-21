@@ -146,7 +146,7 @@ async function ytdlpDirectUrl(videoId: string, format: "mp3" | "mp4"): Promise<{
     const result = await youtubedl(`https://www.youtube.com/watch?v=${videoId}`, {
       noWarnings: true,
       forceIpv4: true,
-      extractorArgs: "youtube:player_client=android_music,android,tv_embedded,ios,mweb,web",
+      extractorArgs: "youtube:player_client=android,android_music,android_vr,tv_embedded,ios",
       socketTimeout: 30,
       print: "title",
       format: formatArg,
@@ -301,7 +301,7 @@ async function ytdlpFileConvert(videoId: string, format: "mp3" | "mp4"): Promise
   const formatArg = format === "mp3"
     ? "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best"
     : "best[height<=720][ext=mp4]/best[height<=720]/best";
-  const cmd = `${existsSync("./yt-dlp") ? "./yt-dlp" : "yt-dlp"} ${ytdlpCookies()} --no-warnings --force-ipv4 --socket-timeout 30 -f "${formatArg}" --print title -o "${outTemplate}" "https://www.youtube.com/watch?v=${videoId}" 2>&1`;
+  const cmd = `${existsSync("./yt-dlp") ? "./yt-dlp" : "yt-dlp"} ${ytdlpCookies()} --no-warnings --force-ipv4 --socket-timeout 30 --extractor-retries 3 -f "${formatArg}" --print title -o "${outTemplate}" "https://www.youtube.com/watch?v=${videoId}" 2>&1`;
   let stdout: string;
   try { ({ stdout } = await execAsync(cmd, { timeout: 120000 })); }
   catch (e: any) { throw new Error(`ytdlpFile: ${(e.stderr || e.message || "unknown").substring(0, 200)}`); }
@@ -394,7 +394,7 @@ async function ytdlpRichSearch(query: string, limit = 50): Promise<{ query: stri
       noWarnings: true,
       flatPlaylist: true,
       dumpJson: true,
-      extractorArgs: "youtube:player_client=android_music,android,tv_embedded,ios,mweb,web",
+      extractorArgs: "youtube:player_client=android,android_music,android_vr,tv_embedded,ios",
       forceIpv4: true,
       socketTimeout: 30,
     });
