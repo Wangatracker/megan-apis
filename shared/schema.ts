@@ -1289,6 +1289,11 @@ const animeEndpoints: ApiEndpoint[] = [
   createEndpoint("/api/anime/yawn", "GET", "Get random yawn anime GIF.", [], "json", "fun", "anime", "v0", "2026-01-05T09:00:00.000Z", "nekos.best", [SC.SUCCESS, SC.SERVER_ERROR], 60),
   createEndpoint("/api/anime/nervous", "GET", "Get random nervous anime image.", [], "json", "fun", "anime", "v0", "2026-01-05T09:00:00.000Z", "nekos.best", [SC.SUCCESS, SC.SERVER_ERROR], 60),
   createEndpoint("/api/anime/punch", "GET", "Get random punch anime GIF.", [], "json", "fun", "anime", "v0", "2026-01-10T10:00:00.000Z", "nekos.best", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/anime/waifu/random", "GET", "Get random SFW waifu image from Waifu.im with tags, artists, and metadata.", [], "json", "fun", "anime-waifu", "v1", "2026-08-21T12:00:00.000Z", "Waifu.im", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/anime/waifu/search", "GET", "Search waifu images by tag (waifu, maid, oppai, etc).", [{ name: "tag", type: "string", required: true, description: "Tag to filter by", default: "waifu" }], "json", "fun", "anime-waifu", "v1", "2026-08-21T12:00:00.000Z", "Waifu.im", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/anime/waifu/tags", "GET", "List all available waifu tags with descriptions and counts.", [], "json", "fun", "anime-waifu", "v1", "2026-08-21T12:00:00.000Z", "Waifu.im", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/anime/waifu/multiple", "GET", "Get multiple waifu images at once (up to 30).", [{ name: "n", type: "number", required: false, description: "Number of images (default 10, max 30)", default: "10" }, { name: "tag", type: "string", required: false, description: "Optional tag filter", default: "waifu" }], "json", "fun", "anime-waifu", "v1", "2026-08-21T12:00:00.000Z", "Waifu.im", [SC.SUCCESS, SC.SERVER_ERROR], 30),
+  createEndpoint("/api/anime/waifu/nsfw", "GET", "Get NSFW waifu image (explicit content, use with caution).", [], "json", "fun", "anime-waifu", "v1", "2026-08-21T12:00:00.000Z", "Waifu.im", [SC.SUCCESS, SC.SERVER_ERROR], 30),
 ];
 
 const funContentEndpoints: ApiEndpoint[] = [
