@@ -390,7 +390,7 @@ export async function getDownloadInfo(url: string, format: "mp3" | "mp4" = "mp3"
 async function ytdlpRichSearch(query: string, limit = 50): Promise<{ query: string; items: any[] }> {
   const sanitized = query.replace(/[^a-zA-Z0-9\s\-_.,'&!?()]/g, "").substring(0, 200);
   const ytdlpBin = existsSync("./yt-dlp") ? "./yt-dlp" : "yt-dlp";
-  const cmd = `${ytdlpBin} --no-warnings --flat-playlist --dump-json --extractor-args "youtube:player_client=android,android_music,android_vr,tv_embedded,ios" --force-ipv4 --socket-timeout 30 "ytsearch${limit}:${sanitized}" 2>&1`;
+  const cmd = `${ytdlpBin} --no-warnings --flat-playlist --dump-json --extractor-args "youtube:player_client=android,android_music,android_vr,tv_embedded,ios" --force-ipv4 --socket-timeout 30 "ytsearch${limit}:${sanitized}" 2>/dev/null`;
   
   let stdout: string;
   try { ({ stdout } = await execAsync(cmd, { timeout: 30000, maxBuffer: 20 * 1024 * 1024 })); }
