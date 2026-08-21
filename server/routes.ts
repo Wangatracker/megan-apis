@@ -36,6 +36,7 @@ import { registerMeganAIRoutes } from "./megan-ai-routes";
 import { registerDashboardRoutes } from "./dashboard-routes";
 import { registerReviewRoutes } from "./review-routes";
 import { registerMovieRoutes } from "./movie-routes";
+import { registerWaifuRoutes } from "./waifu-routes";
 import { downloadTikTok } from "../lib/downloaders/tiktok";
 import { downloadSnapchat } from "../lib/downloaders/snapchat";
 import { downloadInstagram } from "../lib/downloaders/instagram";
