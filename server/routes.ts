@@ -514,14 +514,15 @@ export async function registerRoutes(
           return { success: false, error: result?.error || "Download failed" };
         }
         const rawUrl: string = result.downloadUrl || "";
-        let downloadUrl = rawUrl;
-        let proxyUrl: string | null = null;
+        let streamUrl = rawUrl;
+        let downloadUrl: string | null = null;
         if (rawUrl.startsWith("local://")) {
           const filename = rawUrl.replace("local://", "");
-          downloadUrl = `${baseUrl}/files/${filename}`;
-          proxyUrl = downloadUrl;
+          streamUrl = `${baseUrl}/files/${filename}`;
+          downloadUrl = streamUrl;
         } else if (rawUrl.startsWith("http")) {
-          proxyUrl = `${baseUrl}/proxy?url=${encodeURIComponent(rawUrl)}`;
+          streamUrl = rawUrl;
+          downloadUrl = `${baseUrl}/proxy?url=${encodeURIComponent(rawUrl)}`;
         }
         return {
           success: true,
@@ -1766,6 +1767,7 @@ app.post("/api/scrape/full", async (req, res) => { try { const { url, options } 
       if (proxyRes.headers['content-range']) res.setHeader('Content-Range', proxyRes.headers['content-range']);
       res.setHeader('Accept-Ranges', 'bytes');
       res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Content-Disposition', 'attachment; filename="video.mp4"');
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
       res.writeHead(proxyRes.statusCode || 200);
