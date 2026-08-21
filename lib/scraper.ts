@@ -4,7 +4,6 @@ import { existsSync, mkdirSync, readdirSync } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import youtubedl from 'youtube-dl-exec';
-import youtubedl from 'youtube-dl-exec';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS & CONFIG
@@ -390,42 +389,37 @@ export async function getDownloadInfo(url: string, format: "mp3" | "mp4" = "mp3"
 
 async function ytdlpRichSearch(query: string, limit = 50): Promise<{ query: string; items: any[] }> {
   const sanitized = query.replace(/[^a-zA-Z0-9\s\-_.,'&!?()]/g, "").substring(0, 200);
-  try {
-    const result = await youtubedl(`ytsearch${limit}:${sanitized}`, {
-      noWarnings: true,
-      flatPlaylist: true,
-      dumpJson: true,
-      extractorArgs: "youtube:player_client=android,android_music,android_vr,tv_embedded,ios",
-      forceIpv4: true,
-      socketTimeout: 30,
-    });
-    const items: any[] = [];
-    for (const line of result.trim().split("\n").filter(Boolean)) {
-      try {
-        const data = JSON.parse(line);
-        if (!data.id || data.id.length !== 11) continue;
-        const dur = data.duration || 0;
-        const views = data.view_count || 0;
-        items.push({
-          title: data.title || "Unknown",
-          id: data.id,
-          youtubeUrl: `https://www.youtube.com/watch?v=${data.id}`,
-          thumbnail: data.thumbnail || `https://i.ytimg.com/vi/${data.id}/hqdefault.jpg`,
-          thumbnailHD: `https://i.ytimg.com/vi/${data.id}/maxresdefault.jpg`,
-          duration: dur > 0 ? `${Math.floor(dur/60)}:${String(dur%60).padStart(2,"0")}` : "",
-          durationSeconds: dur,
-          views,
-          viewsFormatted: views > 0 ? Number(views).toLocaleString() : "",
-          channelTitle: data.channel || data.uploader || "Unknown",
-          uploadDate: data.upload_date || null,
-          source: "yt",
-        });
-      } catch {}
-    }
-    return { query, items };
-  } catch (e: any) {
-    throw new Error(`search failed: ${(e.stderr || e.message || "unknown").substring(0, 200)}`);
+  const ytdlpBin = existsSync("./yt-dlp") ? "./yt-dlp" : "yt-dlp";
+  const cmd = `${ytdlpBin} --no-warnings --flat-playlist --dump-json --extractor-args "youtube:player_client=android,android_music,android_vr,tv_embedded,ios" --force-ipv4 --socket-timeout 30 "ytsearch${limit}:${sanitized}" 2>&1`;
+  
+  let stdout: string;
+  try { ({ stdout } = await execAsync(cmd, { timeout: 30000, maxBuffer: 20 * 1024 * 1024 })); }
+  catch (e: any) { throw new Error(`search failed: ${(e.stderr || e.message || "unknown").substring(0, 200)}`); }
+
+  const items: any[] = [];
+  for (const line of stdout.trim().split("\n").filter(Boolean)) {
+    try {
+      const data = JSON.parse(line);
+      if (!data.id || data.id.length !== 11) continue;
+      const dur = data.duration || 0;
+      const views = data.view_count || 0;
+      items.push({
+        title: data.title || "Unknown",
+        id: data.id,
+        youtubeUrl: `https://www.youtube.com/watch?v=${data.id}`,
+        thumbnail: data.thumbnail || `https://i.ytimg.com/vi/${data.id}/hqdefault.jpg`,
+        thumbnailHD: `https://i.ytimg.com/vi/${data.id}/maxresdefault.jpg`,
+        duration: dur > 0 ? `${Math.floor(dur/60)}:${String(dur%60).padStart(2,"0")}` : "",
+        durationSeconds: dur,
+        views,
+        viewsFormatted: views > 0 ? Number(views).toLocaleString() : "",
+        channelTitle: data.channel || data.uploader || "Unknown",
+        uploadDate: data.upload_date || null,
+        source: "yt",
+      });
+    } catch {}
   }
+  return { query, items };
 }
 
 export async function searchSongs(query: string) {
