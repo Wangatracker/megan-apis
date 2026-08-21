@@ -161,6 +161,7 @@ export async function registerRoutes(
   registerDashboardRoutes(app);
   registerReviewRoutes(app);
   registerMovieRoutes(app);
+  registerWaifuRoutes(app);
   registerApiKeyRoutes(app);
 
   // ─── Activity tracking middleware ──────────────────────────────────────────
