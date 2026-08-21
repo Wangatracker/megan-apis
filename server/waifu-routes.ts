@@ -95,12 +95,13 @@ export function registerWaifuRoutes(app: Express): void {
       });
       if (!res.ok) throw new Error(`Waifu.im returned ${res.status}`);
       const data = await res.json();
+      const tags = Array.isArray(data) ? data : (data.items || data.tags || []);
       
       res.json({
         success: true,
         provider: "Waifu.im",
-        count: data.length,
-        data: data.map((tag: any) => ({
+        count: tags.length,
+        data: tags.map((tag: any) => ({
           id: tag.id,
           name: tag.name,
           slug: tag.slug,
