@@ -129,53 +129,59 @@ function recordProviderFailure(name: string): void {
   providerHealth.set(name, h);
 }
 function recordProviderSuccess(name: string): void { providerHealth.delete(name); }
-export function resetProviderHealth(name?: string): void {
-  if (name) providerHealth.delete(name); else providerHealth.clear();
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PROVIDERS
+// DOWNLOAD PROVIDERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 type ConvertFn = (videoId: string, format: "mp3" | "mp4") => Promise<{ downloadUrl: string; title: string }>;
 
-// ─── yt-dlp Direct (no disk, fastest) ────────────────────────────────────────
 async function ytdlpDirectUrl(videoId: string, format: "mp3" | "mp4"): Promise<{ downloadUrl: string; title: string }> {
   try {
     const formatArg = format === "mp3" ? "bestaudio/best" : "best[height<=720]/best";
     const result = await youtubedl(`https://www.youtube.com/watch?v=${videoId}`, {
-      noWarnings: true,
-      forceIpv4: true,
+      noWarnings: true, forceIpv4: true,
       extractorArgs: "youtube:player_client=android,android_music,android_vr,tv_embedded,ios",
-      socketTimeout: 30,
-      print: "title",
-      format: formatArg,
-      getUrl: true,
+      socketTimeout: 30, print: "title", format: formatArg, getUrl: true,
     });
     const lines = result.trim().split("\n").filter(Boolean);
-    if (lines.length < 2) throw new Error("ytdlpDirect: no URL returned");
+    if (lines.length < 2) throw new Error("no URL returned");
     const title = lines[0];
     const downloadUrl = lines[lines.length - 1];
-    if (!downloadUrl?.startsWith("http")) throw new Error("ytdlpDirect: invalid URL");
-    if (downloadUrl.includes(".m3u8") || downloadUrl.includes("manifest")) throw new Error("ytdlpDirect: HLS not supported");
+    if (!downloadUrl?.startsWith("http")) throw new Error("invalid URL");
+    if (downloadUrl.includes(".m3u8") || downloadUrl.includes("manifest")) throw new Error("HLS not supported");
     return { downloadUrl, title };
   } catch (e: any) {
     throw new Error(`ytdlpDirect: ${(e.stderr || e.message || "unknown").substring(0, 200)}`);
   }
 }
 
-// ─── FabDL ──────────────────────────────────────────────────────────────────
+async function flvtoConvert(videoId: string, format: "mp3" | "mp4"): Promise<{ downloadUrl: string; title: string }> {
+  const res = await fetchWithTimeout("https://es.flvto.top/converter", {
+    method: "POST",
+    headers: {
+      "Referer": "https://ytshortsdown.com/", "Origin": "https://ytshortsdown.com",
+      "Content-Type": "application/json", "User-Agent": USER_AGENT,
+    },
+    body: JSON.stringify({ id: videoId, fileType: format }),
+  }, 20000);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await safeJsonParse(res, "flvto");
+  if (format === "mp3" && data.link) return { downloadUrl: data.link, title: data.title || `video_${videoId}` };
+  if (format === "mp4" && data.formats?.[0]?.url) return { downloadUrl: data.formats[0].url, title: data.title || `video_${videoId}` };
+  throw new Error("no URL");
+}
+
 async function fabdlConvert(videoId: string, format: "mp3" | "mp4"): Promise<{ downloadUrl: string; title: string }> {
   const type = format === "mp3" ? "mp3" : "mp4";
   const res = await fetchWithTimeout(
     `https://api.fabdl.com/youtube/get?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&type=${type}`,
     { headers: { "User-Agent": USER_AGENT, Accept: "application/json", Referer: "https://fabdl.com/" } }, 45000
   );
-  if (!res.ok) throw new Error(`fabdl: HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await safeJsonParse(res, "fabdl");
   const result = data?.result ?? data;
   const title = result?.title || `video_${videoId}`;
-  
   if (format === "mp3") {
     const audios = (result?.audios || []).filter((a: any) => a?.url);
     audios.sort((a: any, b: any) => parseFloat(b.quality || "0") - parseFloat(a.quality || "0"));
@@ -185,17 +191,15 @@ async function fabdlConvert(videoId: string, format: "mp3" | "mp4"): Promise<{ d
     videos.sort((a: any, b: any) => parseInt(a.quality || "0") - parseInt(b.quality || "0"));
     if (videos[0]?.url) return { downloadUrl: videos[0].url, title };
   }
-  throw new Error("fabdl: no URL");
+  throw new Error("no URL");
 }
 
-// ─── Invidious ──────────────────────────────────────────────────────────────
-const INVIDIOUS_INSTANCES = [
-  "https://invidious.privacyredirect.com", "https://inv.tux.pizza", "https://yt.cdaut.de",
-  "https://invidious.fdn.fr", "https://invidious.io.lol", "https://invidious.lunar.icu",
-  "https://yewtu.be", "https://iv.datura.network",
-];
 async function invidiousConvert(videoId: string, format: "mp3" | "mp4"): Promise<{ downloadUrl: string; title: string }> {
-  for (const inst of INVIDIOUS_INSTANCES) {
+  const instances = [
+    "https://invidious.privacyredirect.com", "https://inv.tux.pizza", "https://yt.cdaut.de",
+    "https://invidious.fdn.fr", "https://yewtu.be",
+  ];
+  for (const inst of instances) {
     try {
       const r = await fetchWithTimeout(`${inst}/api/v1/videos/${videoId}?fields=title,formatStreams,adaptiveFormats`, {
         headers: { Accept: "application/json", "User-Agent": USER_AGENT }
@@ -208,38 +212,16 @@ async function invidiousConvert(videoId: string, format: "mp3" | "mp4"): Promise
       if (best?.itag) return { downloadUrl: `${inst}/latest_version?id=${videoId}&itag=${best.itag}&local=true`, title };
     } catch {}
   }
-  throw new Error("Invidious: all instances failed");
+  throw new Error("all instances failed");
 }
 
-// ─── Cobalt ─────────────────────────────────────────────────────────────────
-const COBALT_FALLBACK = ["https://cobalt-api.meowing.de", "https://co.eepy.today", "https://cobalt-api.kwiatekmiki.com"];
-let cobaltCache: { instances: string[]; expiresAt: number } | null = null;
-async function getCobaltInstances(): Promise<string[]> {
-  if (cobaltCache && Date.now() < cobaltCache.expiresAt) return cobaltCache.instances;
-  try {
-    const res = await fetchWithTimeout("https://instances.cobalt.best/api/instances.json", {
-      headers: { "User-Agent": USER_AGENT, Accept: "application/json" }
-    }, 8000);
-    if (res.ok) {
-      const data = await res.json() as any[];
-      const instances = data.filter((i: any) => i.online && i.services?.youtube && i.cors && i.api && i.score >= 70)
-        .sort((a: any, b: any) => (b.score || 0) - (a.score || 0)).slice(0, 8).map((i: any) => `https://${i.api}`);
-      if (instances.length > 0) {
-        cobaltCache = { instances, expiresAt: Date.now() + 30 * 60 * 1000 };
-        return instances;
-      }
-    }
-  } catch {}
-  cobaltCache = { instances: COBALT_FALLBACK, expiresAt: Date.now() + 10 * 60 * 1000 };
-  return COBALT_FALLBACK;
-}
 async function cobaltConvert(videoId: string, format: "mp3" | "mp4"): Promise<{ downloadUrl: string; title: string }> {
-  const instances = await getCobaltInstances();
+  const instances = ["https://cobalt-api.meowing.de", "https://co.eepy.today"];
   for (const instance of instances) {
     try {
       const body: any = { url: `https://www.youtube.com/watch?v=${videoId}` };
       if (format === "mp3") { body.downloadMode = "audio"; body.audioFormat = "mp3"; }
-      else { body.downloadMode = "auto"; body.videoQuality = "1080"; body.youtubeVideoCodec = "h264"; }
+      else { body.downloadMode = "auto"; body.videoQuality = "720"; }
       const res = await fetchWithTimeout(instance, {
         method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": USER_AGENT },
         body: JSON.stringify(body)
@@ -249,13 +231,12 @@ async function cobaltConvert(videoId: string, format: "mp3" | "mp4"): Promise<{ 
       if (data.url) return { downloadUrl: data.url, title: data.filename || `video_${videoId}` };
     } catch {}
   }
-  throw new Error("Cobalt: all instances failed");
+  throw new Error("all instances failed");
 }
 
-// ─── Piped ──────────────────────────────────────────────────────────────────
-const PIPED_FALLBACK = ["https://api.piped.private.coffee", "https://pipedapi.kavin.rocks", "https://api.piped.yt"];
 async function pipedConvert(videoId: string, format: "mp3" | "mp4"): Promise<{ downloadUrl: string; title: string }> {
-  for (const inst of PIPED_FALLBACK) {
+  const instances = ["https://pipedapi.kavin.rocks", "https://api.piped.yt"];
+  for (const inst of instances) {
     try {
       const res = await fetchWithTimeout(`${inst}/streams/${videoId}`, {
         headers: { "User-Agent": USER_AGENT, Accept: "application/json" }
@@ -268,47 +249,21 @@ async function pipedConvert(videoId: string, format: "mp3" | "mp4"): Promise<{ d
       if (best?.url) return { downloadUrl: best.url, title };
     } catch {}
   }
-  throw new Error("Piped: all instances failed");
+  throw new Error("all instances failed");
 }
 
-// ─── Y2Mate ─────────────────────────────────────────────────────────────────
-async function y2mateConvert(videoId: string, format: "mp3" | "mp4"): Promise<{ downloadUrl: string; title: string }> {
-  // Simplified: use flvto instead since y2mate requires auth token
-  throw new Error("y2mate: deprecated, use flvto");
-}
-
-// ─── FLVTO ──────────────────────────────────────────────────────────────────
-async function flvtoConvert(videoId: string, format: "mp3" | "mp4"): Promise<{ downloadUrl: string; title: string }> {
-  const res = await fetchWithTimeout("https://es.flvto.top/converter", {
-    method: "POST",
-    headers: {
-      "Referer": "https://ytshortsdown.com/", "Origin": "https://ytshortsdown.com",
-      "Content-Type": "application/json", "User-Agent": USER_AGENT,
-    },
-    body: JSON.stringify({ id: videoId, fileType: format }),
-  }, 20000);
-  if (!res.ok) throw new Error(`flvto: HTTP ${res.status}`);
-  const data = await safeJsonParse(res, "flvto");
-  if (format === "mp3" && data.link) return { downloadUrl: data.link, title: data.title || `video_${videoId}` };
-  if (format === "mp4" && data.formats?.[0]?.url) return { downloadUrl: data.formats[0].url, title: data.title || `video_${videoId}` };
-  throw new Error("flvto: no URL");
-}
-
-// ─── yt-dlp File (server-side download, last resort) ────────────────────────
 async function ytdlpFileConvert(videoId: string, format: "mp3" | "mp4"): Promise<{ downloadUrl: string; title: string }> {
   const uuid = randomUUID();
   const outTemplate = path.join(TEMP_DIR, `${uuid}.%(ext)s`);
-  const formatArg = format === "mp3"
-    ? "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best"
-    : "best[height<=720][ext=mp4]/best[height<=720]/best";
-  const cmd = `${existsSync("./yt-dlp") ? "./yt-dlp" : "yt-dlp"} ${ytdlpCookies()} --no-warnings --force-ipv4 --socket-timeout 30 --extractor-retries 3 -f "${formatArg}" --print title -o "${outTemplate}" "https://www.youtube.com/watch?v=${videoId}" 2>&1`;
+  const formatArg = format === "mp3" ? "bestaudio[ext=m4a]/bestaudio/best" : "best[height<=720]/best";
+  const cmd = `${existsSync("./yt-dlp") ? "./yt-dlp" : "yt-dlp"} ${ytdlpCookies()} --no-warnings --force-ipv4 --socket-timeout 30 -f "${formatArg}" --print title -o "${outTemplate}" "https://www.youtube.com/watch?v=${videoId}" 2>/dev/null`;
   let stdout: string;
   try { ({ stdout } = await execAsync(cmd, { timeout: 120000 })); }
   catch (e: any) { throw new Error(`ytdlpFile: ${(e.stderr || e.message || "unknown").substring(0, 200)}`); }
   const lines = stdout.trim().split("\n").filter(Boolean);
   const title = lines[0] || `video_${videoId}`;
   const candidates = readdirSync(TEMP_DIR).filter(f => f.startsWith(uuid));
-  if (candidates.length === 0) throw new Error("ytdlpFile: output not found");
+  if (candidates.length === 0) throw new Error("output not found");
   const filename = candidates[0];
   const actualExt = filename.split(".").pop() || (format === "mp3" ? "m4a" : "mp4");
   tempFiles.set(uuid, { filePath: path.join(TEMP_DIR, filename), expiresAt: Date.now() + 30 * 60 * 1000 });
@@ -319,19 +274,8 @@ async function ytdlpFileConvert(videoId: string, format: "mp3" | "mp4"): Promise
 // PROVIDER CHAIN
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const mp3Providers: ConvertFn[] = [
-  flvtoConvert, ytdlpDirectUrl, fabdlConvert, invidiousConvert,
-  cobaltConvert, pipedConvert, ytdlpFileConvert,
-];
-
-const mp4Providers: ConvertFn[] = [
-  flvtoConvert, ytdlpDirectUrl, fabdlConvert, invidiousConvert,
-  cobaltConvert, pipedConvert, ytdlpFileConvert,
-];
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN EXPORT
-// ═══════════════════════════════════════════════════════════════════════════════
+const mp3Providers: ConvertFn[] = [flvtoConvert, ytdlpDirectUrl, fabdlConvert, invidiousConvert, cobaltConvert, pipedConvert, ytdlpFileConvert];
+const mp4Providers: ConvertFn[] = [flvtoConvert, ytdlpDirectUrl, fabdlConvert, invidiousConvert, cobaltConvert, pipedConvert, ytdlpFileConvert];
 
 export async function getDownloadInfo(url: string, format: "mp3" | "mp4" = "mp3") {
   const videoId = extractVideoId(url);
@@ -348,21 +292,15 @@ export async function getDownloadInfo(url: string, format: "mp3" | "mp4" = "mp3"
       const result = await fn(videoId, format);
       const isLocal = result.downloadUrl?.startsWith("local://");
       if (!isLocal && !result.downloadUrl?.startsWith("http")) throw new Error("invalid URL");
-      
       recordProviderSuccess(name);
       let title = result.title;
       if (!title || title === "Unknown" || /^video_[a-zA-Z0-9_-]{11}$/.test(title)) {
         title = (await titlePromise) || title || "Unknown";
       }
-
       return {
-        success: true,
-        title,
-        videoId,
-        format,
+        success: true, title, videoId, format,
         quality: format === "mp3" ? "320kbps" : "720p",
-        downloadUrl: result.downloadUrl,
-        isLocalFile: isLocal,
+        downloadUrl: result.downloadUrl, isLocalFile: isLocal,
         thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
         thumbnailMq: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
         youtubeUrl: `https://www.youtube.com/watch?v=${videoId}`,
@@ -375,57 +313,118 @@ export async function getDownloadInfo(url: string, format: "mp3" | "mp4" = "mp3"
       errors.push(`${name}: ${e.message}`);
     }
   }
-
-  return {
-    success: false,
-    error: `All download providers failed. ${errors.join(" | ")}`,
-    videoId,
-  };
+  return { success: false, error: `All download providers failed. ${errors.join(" | ")}`, videoId };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SEARCH
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async function ytdlpRichSearch(query: string, limit = 50): Promise<{ query: string; items: any[] }> {
+function formatSearchItem(data: any) {
+  const dur = data.duration || 0;
+  const views = data.view_count || 0;
+  const id = data.id || data.videoId;
+  if (!id || id.length !== 11) return null;
+  return {
+    title: data.title || "Unknown",
+    id,
+    url: `https://www.youtube.com/watch?v=${id}`,
+    youtubeUrl: `https://www.youtube.com/watch?v=${id}`,
+    thumbnail: data.thumbnail || `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+    thumbnailHD: data.thumbnails?.[1]?.url || `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
+    duration: dur > 0 ? `${Math.floor(dur/60)}:${String(dur%60).padStart(2,"0")}` : "",
+    durationSeconds: dur,
+    views,
+    viewsFormatted: views > 0 ? Number(views).toLocaleString() : "",
+    channelTitle: data.channel || data.uploader || "Unknown",
+    uploadDate: data.upload_date || null,
+    source: "yt",
+  };
+}
+
+async function ytdlpSearch(query: string, limit = 50): Promise<any[]> {
   const sanitized = query.replace(/[^a-zA-Z0-9\s\-_.,'&!?()]/g, "").substring(0, 200);
   const ytdlpBin = existsSync("./yt-dlp") ? "./yt-dlp" : "yt-dlp";
-  const cmd = `${ytdlpBin} --no-warnings --flat-playlist --dump-json --extractor-args "youtube:player_client=android,android_music,android_vr,tv_embedded,ios" --force-ipv4 --socket-timeout 30 "ytsearch${limit}:${sanitized}" 2>/dev/null`;
-  
+  const cmd = `${ytdlpBin} --no-warnings --flat-playlist --dump-json --force-ipv4 --socket-timeout 30 "ytsearch${limit}:${sanitized}" 2>/dev/null`;
   let stdout: string;
   try { ({ stdout } = await execAsync(cmd, { timeout: 30000, maxBuffer: 20 * 1024 * 1024 })); }
-  catch (e: any) { throw new Error(`search failed: ${(e.stderr || e.message || "unknown").substring(0, 200)}`); }
-
+  catch (e: any) { throw new Error(`yt-dlp search failed: ${(e.stderr || e.message || "unknown").substring(0, 200)}`); }
+  
   const items: any[] = [];
   for (const line of stdout.trim().split("\n").filter(Boolean)) {
     try {
       const data = JSON.parse(line);
-      if (!data.id || data.id.length !== 11) continue;
-      const dur = data.duration || 0;
-      const views = data.view_count || 0;
-      items.push({
-        title: data.title || "Unknown",
-        id: data.id,
-        youtubeUrl: `https://www.youtube.com/watch?v=${data.id}`,
-        thumbnail: data.thumbnail || `https://i.ytimg.com/vi/${data.id}/hqdefault.jpg`,
-        thumbnailHD: `https://i.ytimg.com/vi/${data.id}/maxresdefault.jpg`,
-        duration: dur > 0 ? `${Math.floor(dur/60)}:${String(dur%60).padStart(2,"0")}` : "",
-        durationSeconds: dur,
-        views,
-        viewsFormatted: views > 0 ? Number(views).toLocaleString() : "",
-        channelTitle: data.channel || data.uploader || "Unknown",
-        uploadDate: data.upload_date || null,
-        source: "yt",
-      });
+      const item = formatSearchItem(data);
+      if (item) items.push(item);
     } catch {}
   }
-  return { query, items };
+  return items;
+}
+
+async function youtubeHtmlSearch(query: string): Promise<any[]> {
+  const res = await fetchWithTimeout(
+    `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
+    { headers: { "User-Agent": USER_AGENT, "Accept-Language": "en-US,en;q=0.9" } },
+    15000
+  );
+  if (!res.ok) throw new Error(`HTML search HTTP ${res.status}`);
+  const html = await res.text();
+  const match = html.match(/var ytInitialData = ({[\s\S]+?});/);
+  if (!match) throw new Error("could not parse ytInitialData");
+  const data = JSON.parse(match[1]);
+  
+  const items: any[] = [];
+  const contents = data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents || [];
+  
+  for (const section of contents) {
+    for (const renderer of section?.itemSectionRenderer?.contents || []) {
+      const video = renderer?.videoRenderer;
+      if (!video?.videoId) continue;
+      const id = video.videoId;
+      const viewsRaw = video.viewCountText?.simpleText || "0";
+      const viewsNum = parseInt(viewsRaw.replace(/[^0-9]/g, "")) || 0;
+      items.push({
+        title: video.title?.runs?.[0]?.text || "Unknown",
+        id,
+        url: `https://www.youtube.com/watch?v=${id}`,
+        youtubeUrl: `https://www.youtube.com/watch?v=${id}`,
+        thumbnail: video.thumbnail?.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+        thumbnailHD: `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
+        duration: video.lengthText?.simpleText || "",
+        durationSeconds: 0,
+        views: viewsNum,
+        viewsFormatted: viewsRaw,
+        channelTitle: video.ownerText?.runs?.[0]?.text || "Unknown",
+        uploadDate: null,
+        source: "yt",
+      });
+    }
+  }
+  return items;
 }
 
 export async function searchSongs(query: string) {
+  const errors: string[] = [];
+  
+  // Try 1: yt-dlp (best results, works locally)
   try {
-    const result = await ytdlpRichSearch(query, 50);
-    if (result.items.length > 0) return result;
-  } catch {}
+    const items = await ytdlpSearch(query, 50);
+    if (items.length > 0) return { query, items };
+    errors.push("yt-dlp: 0 results");
+  } catch (e: any) {
+    errors.push(`yt-dlp: ${e.message}`);
+    console.log(`[search] yt-dlp failed: ${e.message}`);
+  }
+
+  // Try 2: YouTube HTML scraping (works on any IP)
+  try {
+    const items = await youtubeHtmlSearch(query);
+    if (items.length > 0) return { query, items };
+    errors.push("html: 0 results");
+  } catch (e: any) {
+    errors.push(`html: ${e.message}`);
+    console.log(`[search] HTML failed: ${e.message}`);
+  }
+
   return { query, items: [] };
 }
