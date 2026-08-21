@@ -720,27 +720,12 @@ const specializedAIEndpoints: ApiEndpoint[] = [
 // ─── AI IMAGE GENERATION ENDPOINTS ──────────────────────────────────────────
 
 const aiImageEndpoints: ApiEndpoint[] = [
-  createEndpoint("/api/ai/image/dall-e", "POST", "Generate AI images using DALL-E style model - text to image generation.", [{ name: "prompt", type: "string", required: true, description: "Image description", default: "a wolf howling at the moon" }], "json", "artificial-intelligence", "ai-image-generation", "v0", "2025-10-20T10:00:00.000Z", "ChatEverywhere", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
   createEndpoint("/api/ai/image/pixabay", "GET", "Search and get stock images by keyword from Unsplash and Picsum.", [
     { name: "q", type: "string", required: true, description: "Search query", default: "wolf" },
     { name: "page", type: "number", required: false, description: "Page number (default 1)", default: "1" }
   ], "json", "artificial-intelligence", "ai-image-generation", "v0", "2025-10-25T11:00:00.000Z", "Unsplash + Picsum", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/ai/image/lorem-picsum", "GET", "Get random placeholder image from Lorem Picsum.", [
-    { name: "width", type: "number", required: false, description: "Image width (default 800)", default: "800" },
-    { name: "height", type: "number", required: false, description: "Image height (default 600)", default: "600" }
-  ], "json", "artificial-intelligence", "ai-image-generation", "v0", "2025-11-01T09:00:00.000Z", "Lorem Picsum", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/ai/image/lorem-flickr", "GET", "Get random themed image from LoremFlickr.", [
-    { name: "q", type: "string", required: true, description: "Image theme keyword", default: "wolf" },
-    { name: "width", type: "number", required: false, description: "Image width (default 800)", default: "800" },
-    { name: "height", type: "number", required: false, description: "Image height (default 600)", default: "600" }
-  ], "json", "artificial-intelligence", "ai-image-generation", "v0", "2025-11-05T10:00:00.000Z", "LoremFlickr", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
   createEndpoint("/api/ai/image/dog", "GET", "Get random dog image from Dog CEO API.", [], "json", "artificial-intelligence", "ai-image-generation", "v0", "2025-11-10T11:00:00.000Z", "Dog CEO", [SC.SUCCESS, SC.SERVER_ERROR], 60),
   createEndpoint("/api/ai/image/cat", "GET", "Get random cat image from CATAAS.", [], "json", "artificial-intelligence", "ai-image-generation", "v0", "2025-11-12T09:00:00.000Z", "CATAAS", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/ai/image/pollinations", "GET", "Generate AI image using Stable Diffusion via Pollinations - free, no API key required.", [
-    { name: "q", type: "string", required: true, description: "Image prompt", default: "beautiful landscape" },
-    { name: "width", type: "number", required: false, description: "Width (default 1024)", default: "1024" },
-    { name: "height", type: "number", required: false, description: "Height (default 1024)", default: "1024" }
-  ], "json", "artificial-intelligence", "ai-image-generation", "v0", "2025-11-15T10:00:00.000Z", "Pollinations AI", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
   createEndpoint("/api/ai/image/flux", "GET", "Generate high-quality AI image using FLUX model via Pollinations.", [
     { name: "prompt", type: "string", required: true, description: "Image prompt", default: "cyberpunk city" },
     { name: "width", type: "number", required: false, description: "Width (default 512)", default: "512" },
@@ -756,11 +741,6 @@ const aiImageEndpoints: ApiEndpoint[] = [
     { name: "width", type: "number", required: false, description: "Width", default: "512" },
     { name: "height", type: "number", required: false, description: "Height", default: "512" }
   ], "json", "artificial-intelligence", "ai-image-generation", "v2", "2026-07-03T10:00:00.000Z", "Pollinations.ai", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
-  createEndpoint("/api/ai/image/art", "GET", "Generate artistic AI image with style control via Pollinations.", [
-    { name: "q", type: "string", required: true, description: "Image prompt", default: "dragon" },
-    { name: "style", type: "string", required: false, description: "Art style (realistic, fantasy, etc.)", default: "fantasy" }
-  ], "json", "artificial-intelligence", "ai-image-generation", "v0", "2025-11-20T11:00:00.000Z", "Pollinations AI", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
-  createEndpoint("/api/ai/image/anime", "GET", "Generate anime-style AI image (Studio Ghibli inspired) via Pollinations.", [{ name: "q", type: "string", required: true, description: "Image prompt", default: "samurai" }], "json", "artificial-intelligence", "ai-image-generation", "v0", "2025-11-25T09:00:00.000Z", "Pollinations AI", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
   createEndpoint("/api/v1/ai/image/magicstudio", "GET", "Generate AI art using MagicStudio - returns actual image bytes, no API key required.", [{ name: "prompt", type: "string", required: true, description: "Image prompt", default: "a cute cat" }], "image", "artificial-intelligence", "ai-image-generation", "v1", "2026-05-10T11:00:00.000Z", "MagicStudio", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 20),
 ];
 
