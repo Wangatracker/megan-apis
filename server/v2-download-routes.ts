@@ -17,22 +17,77 @@ async function spotifyDownload(url: string) {
 
 // 2. Twitter Download
 async function twitterDownload(url: string) {
-  const homeRes = await axios.get('https://snaptwitter.com/', { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } });
-  const $ = cheerio.load(homeRes.data);
-  const token = $('input[name="token"]').attr('value');
-  const formData = new URLSearchParams();
-  formData.append('url', url);
-  formData.append('token', token || '');
-  const response = await axios.post('https://snaptwitter.com/action.php', formData, {
-    timeout: 20000,
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-  });
-  const $result = cheerio.load(response.data.data || response.data);
-  return {
-    imgUrl: $result('.videotikmate-left img').attr('src'),
-    downloadLink: $result('.abuttons a').attr('href'),
-    title: $result('.videotikmate-middle h1').text().trim(),
-  };
+  // Provider 1: vxtwitter API (free, reliable, no auth)
+  try {
+    const apiUrl = url.replace(/(twitter\.com|x\.com)/, 'api.vxtwitter.com');
+    const res = await axios.get(apiUrl, {
+      timeout: 15000,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+    });
+    const data = res.data;
+    
+    if (data.mediaURLs && data.mediaURLs.length > 0) {
+      const videos = data.mediaURLs.filter((u: string) => u.includes('.mp4') || u.includes('video'));
+      const images = data.mediaURLs.filter((u: string) => !u.includes('.mp4') && !u.includes('video'));
+      const primaryUrl = videos[0] || data.mediaURLs[0];
+      
+      return {
+        imgUrl: data.media_extended?.[0]?.thumbnail_url || images[0] || null,
+        downloadLink: primaryUrl,
+        title: data.text?.substring(0, 200) || 'Twitter Video',
+        author: data.user_screen_name || 'unknown',
+        allMedia: data.mediaURLs,
+        provider: 'vxtwitter',
+      };
+    }
+  } catch (e) {
+    console.log('[twitter] vxtwitter failed, trying twitsave...');
+  }
+
+  // Provider 2: TwitSave fallback
+  try {
+    const res = await axios.get('https://twitsave.com/info?url=' + encodeURIComponent(url.trim()), {
+      timeout: 15000,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+    });
+    const $ = cheerio.load(res.data);
+    const title = $('.m-2').first().text().trim() || 'Twitter Video';
+    const downloadLink = $('a.download-btn').first().attr('href');
+    const imgUrl = $('video').first().attr('poster');
+    
+    if (downloadLink) {
+      return { imgUrl, downloadLink, title, author: 'unknown', provider: 'twitsave' };
+    }
+  } catch (e) {
+    console.log('[twitter] twitsave failed');
+  }
+
+  // Provider 3: SnapTwitter (old, may be down)
+  try {
+    const homeRes = await axios.get('https://snaptwitter.com/', { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const $ = cheerio.load(homeRes.data);
+    const token = $('input[name="token"]').attr('value');
+    const formData = new URLSearchParams();
+    formData.append('url', url);
+    formData.append('token', token || '');
+    const response = await axios.post('https://snaptwitter.com/action.php', formData, {
+      timeout: 20000,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+    const $result = cheerio.load(response.data.data || response.data);
+    const result = {
+      imgUrl: $result('.videotikmate-left img').attr('src'),
+      downloadLink: $result('.abuttons a').attr('href'),
+      title: $result('.videotikmate-middle h1').text().trim(),
+      author: 'unknown',
+      provider: 'snaptwitter',
+    };
+    if (result.downloadLink) return result;
+  } catch (e) {
+    console.log('[twitter] snaptwitter failed');
+  }
+
+  throw new Error('All Twitter download providers failed');
 }
 
 // 3. CapCut Download
