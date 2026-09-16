@@ -1,36 +1,6 @@
-# Dependencies
 node_modules/
-
-# Build output
 dist/
-
-# Environment
 .env
-.env.local
-.env.production
-
-# Runtime config (contains passwords)
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-
-# Logs
 *.log
-npm-debug.log*
-
-# Temp files
-/tmp/
-*.tmp
-.vercel
-
-# Test files with secrets
-*test*.cjs
-*test*.js
-aigacor.cjs
-endpoint-collector.cjs
-unified-ai.cjs
+*.bak
+yt-dlp
