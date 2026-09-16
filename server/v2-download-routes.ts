@@ -22,29 +22,68 @@ async function twitterDownload(url: string) {
   const execAsync = promisify(exec);
   const ytdlpBin = require('fs').existsSync('./yt-dlp') ? './yt-dlp' : 'yt-dlp';
 
-  const cmd = `${ytdlpBin} --no-warnings --dump-json --no-playlist "${url}" 2>/dev/null`;
-  const { stdout } = await execAsync(cmd, { timeout: 30000, maxBuffer: 10 * 1024 * 1024 });
-  const data = JSON.parse(stdout.trim());
+  // Get direct MP4 URL (best with video+audio, fall back to any mp4 https)
+  const urlCmd = `${ytdlpBin} --no-warnings --no-playlist -f "best[ext=mp4][protocol=https]/best[ext=mp4]/best" -g "${url}" 2>/dev/null`;
+  const { stdout: urlOut } = await execAsync(urlCmd, { timeout: 30000 });
+  const downloadLink = urlOut.trim().split("\n")[0];
 
-  // Find best MP4 video format (with audio)
-  const formats = data.formats || [];
-  const videoFormats = formats.filter((f: any) =>
-    f.vcodec && f.vcodec !== 'none' && f.ext === 'mp4' && f.protocol === 'https'
-  );
-  const bestVideo = videoFormats.sort((a: any, b: any) => (b.height || 0) - (a.height || 0))[0];
-
-  if (!bestVideo || !bestVideo.url) {
-    throw new Error('No video format found in tweet');
+  if (!downloadLink || !downloadLink.startsWith("http")) {
+    throw new Error('yt-dlp returned no download URL');
   }
+
+  // Get metadata
+  const metaCmd = `${ytdlpBin} --no-warnings --dump-json --no-playlist "${url}" 2>/dev/null`;
+  const { stdout: metaOut } = await execAsync(metaCmd, { timeout: 30000, maxBuffer: 10 * 1024 * 1024 });
+  const data = JSON.parse(metaOut.trim());
+
+  // Collect all available formats
+  const availableFormats = (data.formats || [])
+    .filter((f: any) => f.protocol === 'https' && f.ext === 'mp4' && f.height)
+    .map((f: any) => ({
+      formatId: f.format_id,
+      quality: `${f.height}p`,
+      width: f.width,
+      height: f.height,
+      hasAudio: f.acodec !== 'none' && f.acodec !== null,
+      url: f.url,
+    }))
+    .sort((a: any, b: any) => b.height - a.height);
 
   return {
     imgUrl: data.thumbnail || null,
-    downloadLink: bestVideo.url,
+    downloadLink,
     title: data.title || data.description?.substring(0, 100) || 'Twitter Video',
     author: data.uploader || 'unknown',
     duration: data.duration || null,
-    width: bestVideo.width || null,
-    height: bestVideo.height || null,
+    formats: availableFormats,
+    provider: 'ytdlp',
+  };
+}
+
+async function twitterAudio(url: string) {
+  const { exec } = require('child_process');
+  const { promisify } = require('util');
+  const execAsync = promisify(exec);
+  const ytdlpBin = require('fs').existsSync('./yt-dlp') ? './yt-dlp' : 'yt-dlp';
+
+  const cmd = `${ytdlpBin} --no-warnings --no-playlist -f "bestaudio[ext=m4a]/bestaudio/best" -g "${url}" 2>/dev/null`;
+  const { stdout } = await execAsync(cmd, { timeout: 30000 });
+  const audioUrl = stdout.trim().split("\n")[0];
+
+  if (!audioUrl || !audioUrl.startsWith("http")) {
+    throw new Error('yt-dlp returned no audio URL');
+  }
+
+  const metaCmd = `${ytdlpBin} --no-warnings --dump-json --no-playlist "${url}" 2>/dev/null`;
+  const { stdout: metaOut } = await execAsync(metaCmd, { timeout: 30000, maxBuffer: 10 * 1024 * 1024 });
+  const data = JSON.parse(metaOut.trim());
+
+  return {
+    imgUrl: data.thumbnail || null,
+    downloadLink: audioUrl,
+    title: data.title || 'Twitter Audio',
+    author: data.uploader || 'unknown',
+    duration: data.duration || null,
     provider: 'ytdlp',
   };
 }
@@ -285,7 +324,18 @@ export function registerV2DownloadRoutes(app: Express): void {
     if (!url) return res.status(400).json({ status: false, error: "Parameter 'url' required" });
     try {
       const result = await twitterDownload(url);
-      return res.json({ status: true, provider: "SnapTwitter", result });
+      return res.json({ status: true, provider: "yt-dlp", result });
+    } catch (e: any) {
+      return res.status(500).json({ status: false, error: e.message });
+    }
+  });
+
+  app.get('/api/v2/download/twitter-audio', async (req: Request, res: Response) => {
+    const url = req.query.url as string;
+    if (!url) return res.status(400).json({ status: false, error: "Parameter 'url' required" });
+    try {
+      const result = await twitterAudio(url);
+      return res.json({ status: true, provider: "yt-dlp", result });
     } catch (e: any) {
       return res.status(500).json({ status: false, error: e.message });
     }
