@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readdirSync } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import youtubedl from 'youtube-dl-exec';
+import youtubedl from 'youtube-dl-exec';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS & CONFIG
