@@ -9,7 +9,7 @@
     "dev": "NODE_ENV=development node_modules/.bin/tsx server/index.ts",
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
-    "postinstall": "node scripts/install-ytdlp.js"
+    "postinstall": "node scripts/install-ytdlp.cjs"
   },
   "dependencies": {
     "@vreden/youtube_scraper": "^1.2.9",
