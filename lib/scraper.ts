@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readdirSync } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import youtubedl from 'youtube-dl-exec';
-import youtubedl from 'youtube-dl-exec';
+import { scrapeYtmp3 } from "./downloaders/ytmp3-scraper";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS & CONFIG
@@ -139,7 +139,11 @@ type ConvertFn = (videoId: string, format: "mp3" | "mp4") => Promise<{ downloadU
 
 async function ytdlpDirectUrl(videoId: string, format: "mp3" | "mp4"): Promise<{ downloadUrl: string; title: string }> {
   try {
-    const formatArg = format === "mp3" ? "bestaudio/best" : "best[height<=720]/best";
+    // For mp3: force audio-only format with no video codec
+    // For mp4: prefer pre-merged format with both video+audio
+    const formatArg = format === "mp3"
+      ? "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best"
+      : "best[height<=720][ext=mp4]/best[height<=720]/best";
     const result = await youtubedl(`https://www.youtube.com/watch?v=${videoId}`, {
       noWarnings: true, forceIpv4: true,
       extractorArgs: "youtube:player_client=android,android_music,android_vr,tv_embedded,ios",
@@ -271,12 +275,20 @@ async function ytdlpFileConvert(videoId: string, format: "mp3" | "mp4"): Promise
   return { downloadUrl: `local://${uuid}.${actualExt}`, title };
 }
 
+async function ytmp3Convert(videoId: string, format: "mp3" | "mp4"): Promise<{ downloadUrl: string; title: string }> {
+  const result = await scrapeYtmp3(`https://www.youtube.com/watch?v=${videoId}`, format);
+  if (result.status !== "success" || !result.downloadUrl) {
+    throw new Error(`ytmp3: ${result.message || "no download URL"}`);
+  }
+  return { downloadUrl: result.downloadUrl, title: result.title || `video_${videoId}` };
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROVIDER CHAIN
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const mp3Providers: ConvertFn[] = [flvtoConvert, ytdlpDirectUrl, fabdlConvert, invidiousConvert, cobaltConvert, pipedConvert, ytdlpFileConvert];
-const mp4Providers: ConvertFn[] = [flvtoConvert, ytdlpDirectUrl, fabdlConvert, invidiousConvert, cobaltConvert, pipedConvert, ytdlpFileConvert];
+const mp3Providers: ConvertFn[] = [ytmp3Convert, ytdlpDirectUrl, flvtoConvert, fabdlConvert, invidiousConvert, cobaltConvert, pipedConvert, ytdlpFileConvert];
+const mp4Providers: ConvertFn[] = [ytmp3Convert, ytdlpDirectUrl, flvtoConvert, fabdlConvert, invidiousConvert, cobaltConvert, pipedConvert, ytdlpFileConvert];
 
 export async function getDownloadInfo(url: string, format: "mp3" | "mp4" = "mp3") {
   const videoId = extractVideoId(url);
