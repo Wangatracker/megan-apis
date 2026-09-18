@@ -4,12 +4,12 @@
   "type": "module",
   "license": "MIT",
   "author": "Tracker Wanga",
-  "description": "Free REST API hub — AI chat, social media downloads, image effects, OSINT tools, and more. Powered by Falcon Tech.",
+  "description": "Free REST API hub \u2014 AI chat, social media downloads, image effects, OSINT tools, and more. Powered by Falcon Tech.",
   "scripts": {
     "dev": "NODE_ENV=development node_modules/.bin/tsx server/index.ts",
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
-    "postinstall": "node -e \"const{execSync}=require('child_process');try{console.log('[yt-dlp] Downloading to project...');execSync('curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o ./yt-dlp && chmod +x ./yt-dlp',{stdio:'inherit'});console.log('[yt-dlp] Installed successfully');}catch(e){console.log('[yt-dlp] Download failed, will use Node.js fallbacks:', e.message);}\""
+    "postinstall": "node scripts/install-ytdlp.js"
   },
   "dependencies": {
     "@vreden/youtube_scraper": "^1.2.9",
