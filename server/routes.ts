@@ -39,6 +39,7 @@ import { registerMovieRoutes } from "./movie-routes";
 import { registerWaifuRoutes } from "./waifu-routes";
 import { registerChangelogRoutes } from "./changelog-routes";
 import { registerYouTubeAudioRoutes } from "./youtube-audio-routes";
+import { registerDebugYtdlpRoutes } from "./debug-ytdlp-routes";
 import { downloadTikTok } from "../lib/downloaders/tiktok";
 import { downloadSnapchat } from "../lib/downloaders/snapchat";
 import { downloadInstagram } from "../lib/downloaders/instagram";
@@ -166,6 +167,7 @@ export async function registerRoutes(
   registerWaifuRoutes(app);
   registerChangelogRoutes(app);
   registerYouTubeAudioRoutes(app);
+  registerDebugYtdlpRoutes(app);
   registerApiKeyRoutes(app);
 
   // ─── Activity tracking middleware ──────────────────────────────────────────
