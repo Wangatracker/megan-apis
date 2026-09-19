@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { usageTracker } from "./usage-tracker";
+import { runDetector } from "./detector";
 import { responseTransformer } from "./response-transformer";
 import { createServer } from "http";
 import { exec } from "child_process";
@@ -153,6 +154,31 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+
+      // ─── AUTO-RUN DETECTOR every 60s ───
+      // Scans recent api_usage, writes anomalies to key_flags + notifications
+      // Never blocks keys — only warns owners
+      const DETECTOR_INTERVAL_MS = 60_000;
+      let detectorBusy = false;
+
+      setInterval(async () => {
+        if (detectorBusy) return; // prevent overlap
+        detectorBusy = true;
+        try {
+          const result = await runDetector();
+          if (result.flags_created > 0 || result.notifications_created > 0) {
+            console.log(
+              `[detector] scanned=${result.scanned} flagged=${result.flagged} flags=${result.flags_created} notifs=${result.notifications_created} (${result.duration_ms}ms)`
+            );
+          }
+        } catch (e: any) {
+          console.error("[detector] error:", e.message);
+        } finally {
+          detectorBusy = false;
+        }
+      }, DETECTOR_INTERVAL_MS);
+
+      console.log(`[detector] auto-run enabled (every ${DETECTOR_INTERVAL_MS / 1000}s)`);
     },
   );
 })();
