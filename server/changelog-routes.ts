@@ -234,9 +234,11 @@ export function registerChangelogRoutes(app: Express): void {
   // ─────────────────────────────────────────────────────────────────────────
 
   // List active notifications
+  // Optional ?uid=... — if provided, returns global + that user's targeted notifications.
+  // If not provided, returns only global (target_user_id IS NULL).
   app.get("/api/notifications", async (req: Request, res: Response) => {
     try {
-      // Auto-create table if missing
+      // Auto-create table if missing (with target_user_id + metadata for per-user notifications)
       try {
         await d1Query(`CREATE TABLE IF NOT EXISTS notifications (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -246,13 +248,36 @@ export function registerChangelogRoutes(app: Express): void {
           priority TEXT DEFAULT 'normal',
           is_active INTEGER DEFAULT 1,
           expires_at DATETIME,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          target_user_id TEXT,
+          metadata TEXT
         )`);
       } catch {}
 
-      const list = await d1Query(
-        "SELECT * FROM notifications WHERE is_active = 1 AND (expires_at IS NULL OR expires_at > datetime('now')) ORDER BY id DESC LIMIT 50"
-      );
+      const uid = (req.query.uid as string) || null;
+
+      let list: any[];
+      if (uid) {
+        // Global OR targeted at this user
+        list = await d1Query(
+          `SELECT * FROM notifications
+           WHERE is_active = 1
+             AND (expires_at IS NULL OR expires_at > datetime('now'))
+             AND (target_user_id IS NULL OR target_user_id = ?)
+           ORDER BY id DESC LIMIT 50`,
+          [uid]
+        );
+      } else {
+        // Only global
+        list = await d1Query(
+          `SELECT * FROM notifications
+           WHERE is_active = 1
+             AND (expires_at IS NULL OR expires_at > datetime('now'))
+             AND target_user_id IS NULL
+           ORDER BY id DESC LIMIT 50`
+        );
+      }
+
       res.json({
         success: true,
         count: list.length,
@@ -264,17 +289,28 @@ export function registerChangelogRoutes(app: Express): void {
   });
 
   // Add notification (admin)
+  // - target_user_id NULL/omitted → broadcast to all users
+  // - target_user_id = uid → only that user sees it
+  // - metadata = optional JSON string with extra info
   app.post("/api/notifications", async (req: Request, res: Response) => {
     try {
       if (!isAdmin(req)) return res.status(403).json({ success: false, error: "Admin key required" });
-      const { type, title, message, priority, expires_at } = req.body || {};
+      const { type, title, message, priority, expires_at, target_user_id, metadata } = req.body || {};
       if (!type || !title || !message) {
         return res.status(400).json({ success: false, error: "'type', 'title', 'message' required" });
       }
 
       await d1Query(
-        "INSERT INTO notifications (type, title, message, priority, expires_at) VALUES (?, ?, ?, ?, ?)",
-        [type, title, message, priority || "normal", expires_at || null]
+        "INSERT INTO notifications (type, title, message, priority, expires_at, target_user_id, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [
+          type,
+          title,
+          message,
+          priority || "normal",
+          expires_at || null,
+          target_user_id || null,
+          metadata ? (typeof metadata === "string" ? metadata : JSON.stringify(metadata)) : null,
+        ]
       );
       const [inserted] = await d1Query("SELECT * FROM notifications ORDER BY id DESC LIMIT 1");
       res.json({ success: true, notification: formatNotification(inserted) });
