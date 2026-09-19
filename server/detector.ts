@@ -17,18 +17,18 @@ const CONFIG = {
   WINDOW_MINUTES: 5,               // Look at last N minutes of usage
   DEDUPE_MINUTES: 30,              // Don't re-fire same (key, type) within N minutes
 
-  HIGH_FREQ_PER_MIN: 500,          // > 500 req/min → flag
+  HIGH_FREQ_PER_MIN: 2,          // > 500 req/min → flag
   HIGH_FREQ_SEVERITY: "medium",
 
   ERROR_RATE_PCT: 40,              // > 40% errors → flag
-  ERROR_MIN_REQUESTS: 20,          // Only if at least N requests in window
+  ERROR_MIN_REQUESTS: 1,          // Only if at least N requests in window
   ERROR_SEVERITY: "medium",
 
   MULTI_IP_COUNT: 3,               // 3+ distinct IPs in window → flag
-  MULTI_IP_MIN_REQUESTS: 10,
+  MULTI_IP_MIN_REQUESTS: 2,
   MULTI_IP_SEVERITY: "high",
 
-  SCAN_ENDPOINTS_PER_MIN: 20,      // 20+ distinct endpoints in 1 min → flag
+  SCAN_ENDPOINTS_PER_MIN: 1,      // 20+ distinct endpoints in 1 min → flag
   SCAN_SEVERITY: "high",
 };
 
