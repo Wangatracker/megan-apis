@@ -34,16 +34,10 @@ async function d1Query(sql: string, params: any[] = []) {
 }
 
 function isAdmin(req: Request): boolean {
-  // Accept ONLY the master key — hardcoded for reliability.
-  // Also accepts x-admin-key header for flexibility.
+  // Header is the reliable path (gateway may strip req.query.api_key)
   const MASTER = "megan_admin_master";
-  const queryKey = req.query.api_key as string | undefined;
   const headerKey = req.headers["x-admin-key"] as string | undefined;
-  const match = queryKey === MASTER || headerKey === MASTER;
-  if (!match) {
-    console.log("[isAdmin] denied. queryKey=" + queryKey + " headerKey=" + headerKey);
-  }
-  return match;
+  return headerKey === MASTER;
 }
 
 function formatEntry(e: any) {
