@@ -15,7 +15,7 @@ interface DetectorResult {
 // Config — tweak these thresholds
 const CONFIG = {
   WINDOW_MINUTES: 5,               // Look at last N minutes of usage
-  DEDUPE_MINUTES: 30,              // Don't re-fire same (key, type) within N minutes
+  DEDUPE_MINUTES: 1,              // Don't re-fire same (key, type) within N minutes
 
   HIGH_FREQ_PER_MIN: 2,          // > 500 req/min → flag
   HIGH_FREQ_SEVERITY: "medium",
