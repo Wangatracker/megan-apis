@@ -161,24 +161,12 @@ app.use((req, res, next) => {
       const DETECTOR_INTERVAL_MS = 60_000;
       let detectorBusy = false;
 
-      setInterval(async () => {
-        if (detectorBusy) return; // prevent overlap
-        detectorBusy = true;
-        try {
-          const result = await runDetector();
-          if (result.flags_created > 0 || result.notifications_created > 0) {
-            console.log(
-              `[detector] scanned=${result.scanned} flagged=${result.flagged} flags=${result.flags_created} notifs=${result.notifications_created} (${result.duration_ms}ms)`
-            );
-          }
-        } catch (e: any) {
-          console.error("[detector] error:", e.message);
-        } finally {
-          detectorBusy = false;
-        }
-      }, DETECTOR_INTERVAL_MS);
-
-      console.log(`[detector] auto-run enabled (every ${DETECTOR_INTERVAL_MS / 1000}s)`);
+      // ─── DETECTOR AUTO-RUN DISABLED ───
+      // Reason: reduces D1 reads. Run manually via:
+      //   curl -X POST "https://apis.megan.qzz.io/api/admin/detector/run" \
+      //        -H "x-admin-password: meganadmin2026"
+      // Re-enable when D1 quota is comfortable.
+      console.log("[detector] auto-run DISABLED (saves D1 reads)");
     },
   );
 })();
