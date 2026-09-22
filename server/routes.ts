@@ -39,6 +39,7 @@ import { registerMovieRoutes } from "./movie-routes";
 import { registerWaifuRoutes } from "./waifu-routes";
 import { registerChangelogRoutes } from "./changelog-routes";
 import { registerDetectorRoutes } from "./detector";
+import { registerAdminExtraRoutes } from "./admin-extra-routes";
 import { registerYouTubeAudioRoutes } from "./youtube-audio-routes";
 import { registerDebugYtdlpRoutes } from "./debug-ytdlp-routes";
 import { downloadTikTok } from "../lib/downloaders/tiktok";
@@ -168,6 +169,7 @@ export async function registerRoutes(
   registerWaifuRoutes(app);
   registerChangelogRoutes(app);
   registerDetectorRoutes(app);
+  registerAdminExtraRoutes(app);
   registerYouTubeAudioRoutes(app);
   registerDebugYtdlpRoutes(app);
   registerApiKeyRoutes(app);
