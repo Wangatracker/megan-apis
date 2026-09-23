@@ -292,16 +292,25 @@ export function registerRequestRoutes(app: Express): void {
           ? `Endpoint live: ${finalEndpoint}. Thanks for the suggestion!`
           : `Your requested feature is now live. Thanks for the suggestion!`;
 
-        // 1. Notify submitter
+        const API_BASE = "https://apis.megan.qzz.io";
+        const MASTER = "megan_admin_master";
+
+        // 1. Notify submitter (via public API to hit the correct DB)
         try {
-          await d1Execute(
-            `INSERT INTO notifications (type, title, message, priority, target_user_id, is_active, created_at)
-             VALUES ('new', ?, ?, 'high', ?, 1, datetime('now'))`,
-            [title, message, prev.user_id]
-          );
+          await fetch(`${API_BASE}/api/notifications?api_key=${MASTER}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-admin-key": MASTER },
+            body: JSON.stringify({
+              type: "new",
+              title,
+              message,
+              priority: "high",
+              target_user_id: prev.user_id,
+            }),
+          });
         } catch (e) { console.error("notif submitter failed", e); }
 
-        // 2. Notify all voters (except submitter — they already got one)
+        // 2. Notify all voters (except submitter)
         try {
           const voters = await d1Query(
             "SELECT user_id FROM endpoint_request_votes WHERE request_id = ? AND user_id != ?",
@@ -309,27 +318,34 @@ export function registerRequestRoutes(app: Express): void {
           );
           for (const v of voters as any[]) {
             try {
-              await d1Execute(
-                `INSERT INTO notifications (type, title, message, priority, target_user_id, is_active, created_at)
-                 VALUES ('new', ?, ?, 'normal', ?, 1, datetime('now'))`,
-                [`🚀 Request you voted for shipped: ${prev.title}`, message, v.user_id]
-              );
+              await fetch(`${API_BASE}/api/notifications?api_key=${MASTER}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "x-admin-key": MASTER },
+                body: JSON.stringify({
+                  type: "new",
+                  title: `🚀 Request you voted for shipped: ${prev.title}`,
+                  message,
+                  priority: "normal",
+                  target_user_id: v.user_id,
+                }),
+              });
             } catch {}
           }
         } catch (e) { console.error("notif voters failed", e); }
 
         // 3. Auto-changelog entry
         try {
-          await d1Execute(
-            `INSERT INTO changelog (type, title, description, endpoints, version, created_at)
-             VALUES ('new', ?, ?, ?, ?, datetime('now'))`,
-            [
-              `Community Request: ${prev.title}`,
-              `Shipped from user request by ${prev.username}. ${prev.description}`,
-              finalEndpoint,
-              "community",
-            ]
-          );
+          await fetch(`${API_BASE}/api/changelog?api_key=${MASTER}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-admin-key": MASTER },
+            body: JSON.stringify({
+              type: "new",
+              title: `Community Request: ${prev.title}`,
+              description: `Shipped from user request by ${prev.username}. ${prev.description}`,
+              endpoints: finalEndpoint ? [finalEndpoint] : [],
+              version: "community",
+            }),
+          });
         } catch (e) { console.error("changelog failed", e); }
       }
 
