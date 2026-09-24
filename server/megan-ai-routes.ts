@@ -5,6 +5,23 @@ import { allEndpoints, apiCategories, ApiEndpoint } from "../shared/schema";
 
 // ─── MEGAN AI ASSISTANT (Dynamic Schema Search) ────────────────────────────
 
+// ─── CHAT RATE LIMIT (in-memory) ────────────────────────────────────────────
+const chatRateLimitMap = new Map<string, { count: number; reset: number }>();
+const CHAT_LIMIT = 10;               // 10 messages
+const CHAT_WINDOW_MS = 60 * 1000;    // per minute
+
+function checkChatRateLimit(key: string): { ok: boolean; remaining: number } {
+  const now = Date.now();
+  const entry = chatRateLimitMap.get(key);
+  if (!entry || now > entry.reset) {
+    chatRateLimitMap.set(key, { count: 1, reset: now + CHAT_WINDOW_MS });
+    return { ok: true, remaining: CHAT_LIMIT - 1 };
+  }
+  if (entry.count >= CHAT_LIMIT) return { ok: false, remaining: 0 };
+  entry.count++;
+  return { ok: true, remaining: CHAT_LIMIT - entry.count };
+}
+
 const MEGAN_INFO = {
   name: "Tracker Wanga",
   age: 20,
@@ -230,6 +247,88 @@ export function registerMeganAIRoutes(app: Express): void {
     return res.status(500).json({ success: false, error: `All AI models failed: ${lastError}` });
   });
   
+  // ─── POST /api/v2/megan-ai/chat ────────────────────────────────────────
+  // Multi-turn chat. Body: { message, conversation_id? }
+  // Returns structured endpoint recommendations + reply text.
+  app.post("/api/v2/megan-ai/chat", async (req: Request, res: Response) => {
+    const message = (req.body?.message || "").trim();
+    const incomingConvId = req.body?.conversation_id as string | undefined;
+    const uid = (req.body?.uid as string) || (req.query.uid as string) || (req.ip || "anon");
+
+    if (!message) return res.status(400).json({ success: false, error: "message required" });
+    if (message.length > 1000) return res.status(400).json({ success: false, error: "message too long (max 1000 chars)" });
+
+    // Rate limit
+    const rate = checkChatRateLimit(uid);
+    if (!rate.ok) {
+      return res.status(429).json({
+        success: false,
+        error: "Rate limit exceeded. Try again in a minute.",
+      });
+    }
+
+    try {
+      // 1. Search endpoints
+      const relevantEndpoints = searchEndpoints(message, 8);
+      const systemPrompt = buildSystemPrompt(message);
+      const conversationId = incomingConvId || `conv-${Date.now().toString(36)}`;
+
+      // 2. Ask the LLM (cascade)
+      const models = [
+        { key: "deepseek", name: "DeepSeek V3.2", fn: () => askOverchat(message, systemPrompt, "deepseek") },
+        { key: "megan",    name: "Megan AI (GLM)", fn: () => askMeganAI(message, systemPrompt) },
+        { key: "gpt5",     name: "GPT-4.1 Nano",  fn: () => askOverchat(message, systemPrompt, "gpt5") },
+        { key: "gemini",   name: "Gemini 2.0 Flash Lite", fn: () => askGeminiLite(message, systemPrompt) },
+      ];
+
+      let answer = "";
+      let usedModel = "";
+      let lastError = "";
+
+      for (const m of models) {
+        try {
+          answer = await m.fn();
+          usedModel = m.name;
+          break;
+        } catch (e: any) {
+          lastError = e.message;
+          console.log(`[MeganChat] ${m.name} failed: ${e.message}`);
+        }
+      }
+
+      if (!answer) {
+        return res.status(500).json({ success: false, error: `AI unavailable: ${lastError}` });
+      }
+
+      // 3. Structure endpoints for the frontend
+      const structuredEndpoints = relevantEndpoints.slice(0, 6).map((ep: any) => ({
+        path: ep.path,
+        method: ep.method,
+        description: ep.description,
+      }));
+
+      // 4. Persist (best-effort)
+      try {
+        await d1Execute(
+          "INSERT INTO megan_ai_conversations (conversation_id, user_input, ai_response, model_used, fallback_used) VALUES (?, ?, ?, ?, ?)",
+          [conversationId, message, answer, usedModel, usedModel !== "DeepSeek V3.2"]
+        );
+      } catch {}
+
+      return res.json({
+        success: true,
+        provider: "Megan AI",
+        model: usedModel,
+        conversation_id: conversationId,
+        reply: answer,
+        endpoints: structuredEndpoints,
+      });
+    } catch (e: any) {
+      return res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
   console.log("✅ Megan AI Routes Registered:");
-  console.log("  GET /api/v2/megan-ai?q=... (dynamic schema search)");
+  console.log("  GET  /api/v2/megan-ai?q=... (dynamic schema search)");
+  console.log("  POST /api/v2/megan-ai/chat  (multi-turn chat, 10/min rate limit)");
 }
