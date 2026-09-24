@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import axios from "axios";
 import { d1Query, d1Execute } from "./d1-client";
 import { allEndpoints, apiCategories, ApiEndpoint } from "../shared/schema";
+import { cfChat, cfTTS, cfSTT, cfAiConfigured } from "./cf-ai";
 
 // ─── MEGAN AI ASSISTANT (Dynamic Schema Search) ────────────────────────────
 
