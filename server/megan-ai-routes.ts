@@ -37,6 +37,24 @@ const MEGAN_INFO = {
 
 // ─── SEARCH SCHEMA ─────────────────────────────────────────────────────────
 
+// ─── INTENT DETECTION ──────────────────────────────────────────────────────
+function needsEndpointSearch(msg: string): boolean {
+  const m = msg.trim().toLowerCase();
+  if (m.length < 4) return false;
+
+  // Pure conversational messages
+  const conversational = /^(hi|hey|hello|yo|sup|hiya|howdy|thanks|thank you|ty|ok|okay|cool|nice|perfect|awesome|got it|sure|please|maybe|bye|goodbye|good morning|good afternoon|good evening|how are you|what'?s up|np|lol|haha|\S+\s+is\s+your\s+name)[\s\?\!.,]*$/i;
+  if (conversational.test(m)) return false;
+
+  // Identity / meta questions
+  const meta = /^(who are you|what are you|what can you do|what is megan|tell me about|introduce yourself)/i;
+  if (meta.test(m)) return false;
+
+  // If message contains an action verb or a known category, search
+  const triggers = /\b(download|convert|generate|extract|search|find|get|send|upload|scrape|translate|summari[sz]e|analy[sz]e|image|video|audio|music|pdf|qr|stalk|track|weather|news|ai|api|endpoint|tiktok|youtube|facebook|instagram|twitter|spotify|telegram|whatsapp|sticker|meme|movie|anime|ghibli|effect|reverse|lookup|verify|check|scan)\b/;
+  return triggers.test(m);
+}
+
 function searchEndpoints(query: string, limit: number = 10): ApiEndpoint[] {
   const q = query.toLowerCase();
   const keywords = q.split(/\s+/).filter(w => w.length > 2);
@@ -268,9 +286,9 @@ export function registerMeganAIRoutes(app: Express): void {
     }
 
     try {
-      // 1. Search endpoints
-      const relevantEndpoints = searchEndpoints(message, 8);
-      const systemPrompt = buildSystemPrompt(message);
+      // 1. Search endpoints ONLY if the message actually asks for one
+      const relevantEndpoints = needsEndpointSearch(message) ? searchEndpoints(message, 8) : [];
+      const systemPrompt = buildSystemPrompt(message, relevantEndpoints);
       const conversationId = incomingConvId || `conv-${Date.now().toString(36)}`;
 
       // 2. Ask the LLM (cascade)
