@@ -58,7 +58,7 @@ export async function cfChat(
 
 // ─── TEXT TO SPEECH ────────────────────────────────────────────────────────
 // Returns MP3 bytes. Model: deepgram aura-2-en
-export async function cfTTS(text: string, voice: string = "aura-2-en-asteria"): Promise<Buffer> {
+export async function cfTTS(text: string, voice: string = "asteria"): Promise<Buffer> {
   if (!cfAiConfigured()) throw new Error("Cloudflare AI not configured");
 
   const res = await fetch(`${BASE}/@cf/deepgram/aura-2-en`, {

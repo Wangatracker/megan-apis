@@ -532,7 +532,7 @@ export function registerMeganAIRoutes(app: Express): void {
   app.post("/api/v2/megan-ai/tts", async (req: Request, res: Response) => {
     try {
       const text = (req.body?.text || "").trim();
-      const voice = (req.body?.voice as string) || "aura-2-en-asteria";
+      const voice = (req.body?.voice as string) || "asteria";
       if (!text) return res.status(400).json({ success: false, error: "text required" });
       if (text.length > 2000) return res.status(400).json({ success: false, error: "text too long (max 2000)" });
 
