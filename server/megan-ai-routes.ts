@@ -291,26 +291,41 @@ export function registerMeganAIRoutes(app: Express): void {
       const systemPrompt = buildSystemPrompt(message, relevantEndpoints);
       const conversationId = incomingConvId || `conv-${Date.now().toString(36)}`;
 
-      // 2. Ask the LLM (cascade)
-      const models = [
-        { key: "deepseek", name: "DeepSeek V3.2", fn: () => askOverchat(message, systemPrompt, "deepseek") },
-        { key: "megan",    name: "Megan AI (GLM)", fn: () => askMeganAI(message, systemPrompt) },
-        { key: "gpt5",     name: "GPT-4.1 Nano",  fn: () => askOverchat(message, systemPrompt, "gpt5") },
-        { key: "gemini",   name: "Gemini 2.0 Flash Lite", fn: () => askGeminiLite(message, systemPrompt) },
-      ];
-
+      // 2. Ask the LLM — CF Workers AI primary, DeepSeek as fallback
       let answer = "";
       let usedModel = "";
       let lastError = "";
 
-      for (const m of models) {
+      // ── Primary: Cloudflare Workers AI ──
+      if (cfAiConfigured()) {
         try {
-          answer = await m.fn();
-          usedModel = m.name;
-          break;
+          answer = await cfChat([
+            { role: "system", content: systemPrompt },
+            { role: "user", content: message },
+          ]);
+          usedModel = "Cloudflare Llama 3.3 70B";
         } catch (e: any) {
           lastError = e.message;
-          console.log(`[MeganChat] ${m.name} failed: ${e.message}`);
+          console.log(`[Hinatu] CF AI failed: ${e.message}`);
+        }
+      }
+
+      // ── Fallback: DeepSeek → GLM → Gemini ──
+      if (!answer) {
+        const fallbacks = [
+          { key: "deepseek", name: "DeepSeek V3.2", fn: () => askOverchat(message, systemPrompt, "deepseek") },
+          { key: "megan",    name: "Megan AI (GLM)", fn: () => askMeganAI(message, systemPrompt) },
+          { key: "gemini",   name: "Gemini Flash Lite", fn: () => askGeminiLite(message, systemPrompt) },
+        ];
+        for (const m of fallbacks) {
+          try {
+            answer = await m.fn();
+            usedModel = m.name + " (fallback)";
+            break;
+          } catch (e: any) {
+            lastError = e.message;
+            console.log(`[Hinatu] ${m.name} failed: ${e.message}`);
+          }
         }
       }
 
@@ -511,9 +526,52 @@ export function registerMeganAIRoutes(app: Express): void {
     }
   });
 
-  console.log("✅ Megan AI Routes Registered:");
+  // ─── POST /api/v2/megan-ai/tts ─────────────────────────────────────────
+  // Body: { text, voice? }  → returns MP3 bytes
+  app.post("/api/v2/megan-ai/tts", async (req: Request, res: Response) => {
+    try {
+      const text = (req.body?.text || "").trim();
+      const voice = (req.body?.voice as string) || "aura-2-en-asteria";
+      if (!text) return res.status(400).json({ success: false, error: "text required" });
+      if (text.length > 2000) return res.status(400).json({ success: false, error: "text too long (max 2000)" });
+
+      if (!cfAiConfigured()) {
+        return res.status(503).json({ success: false, error: "TTS not configured" });
+      }
+
+      const mp3 = await cfTTS(text, voice);
+      res.setHeader("Content-Type", "audio/mpeg");
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      return res.send(mp3);
+    } catch (e: any) {
+      return res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  // ─── POST /api/v2/megan-ai/stt ─────────────────────────────────────────
+  // Body: { audio: "base64..." }  → returns { text }
+  app.post("/api/v2/megan-ai/stt", async (req: Request, res: Response) => {
+    try {
+      const audio = req.body?.audio as string;
+      if (!audio) return res.status(400).json({ success: false, error: "audio (base64) required" });
+      if (audio.length > 15_000_000) return res.status(413).json({ success: false, error: "audio too large (max ~10MB)" });
+
+      if (!cfAiConfigured()) {
+        return res.status(503).json({ success: false, error: "STT not configured" });
+      }
+
+      const text = await cfSTT(audio);
+      return res.json({ success: true, text });
+    } catch (e: any) {
+      return res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  console.log("✅ Megan AI (Hinatu) Routes Registered:");
   console.log("  GET    /api/v2/megan-ai?q=...");
-  console.log("  POST   /api/v2/megan-ai/chat  (10/min rate limit)");
+  console.log("  POST   /api/v2/megan-ai/chat   (10/min rate limit)");
+  console.log("  POST   /api/v2/megan-ai/tts    (Cloudflare Deepgram Aura)");
+  console.log("  POST   /api/v2/megan-ai/stt    (Cloudflare Whisper)");
   console.log("  GET    /api/v2/megan-ai/sessions?uid=...");
   console.log("  GET    /api/v2/megan-ai/sessions/:id");
   console.log("  PATCH  /api/v2/megan-ai/sessions/:id");
