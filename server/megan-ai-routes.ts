@@ -315,11 +315,54 @@ export function registerMeganAIRoutes(app: Express): void {
         );
       } catch {}
 
+      // ─── SESSION MANAGEMENT ───────────────────────────────────────────
+      const sessionId = (req.body?.session_id as string) || null;
+      let finalSessionId = sessionId;
+      let isNewSession = false;
+
+      if (!finalSessionId) {
+        // New session
+        finalSessionId = `chat-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        isNewSession = true;
+        const title = message.length > 60 ? message.slice(0, 57) + "..." : message;
+        try {
+          await d1Execute(
+            "INSERT INTO ai_chat_sessions (id, user_id, title, message_count, created_at, updated_at) VALUES (?, ?, ?, 0, datetime('now'), datetime('now'))",
+            [finalSessionId, uid === "anon" ? null : uid, title]
+          );
+        } catch (e: any) { console.error("session create failed", e.message); }
+      }
+
+      // Save user message
+      try {
+        await d1Execute(
+          "INSERT INTO ai_chat_messages (session_id, role, content, created_at) VALUES (?, 'user', ?, datetime('now'))",
+          [finalSessionId, message]
+        );
+      } catch (e: any) { console.error("user msg save failed", e.message); }
+
+      // Save AI message
+      try {
+        await d1Execute(
+          "INSERT INTO ai_chat_messages (session_id, role, content, endpoints, model_used, created_at) VALUES (?, 'assistant', ?, ?, ?, datetime('now'))",
+          [finalSessionId, answer, JSON.stringify(structuredEndpoints), usedModel]
+        );
+      } catch (e: any) { console.error("ai msg save failed", e.message); }
+
+      // Bump session updated_at + message_count
+      try {
+        await d1Execute(
+          "UPDATE ai_chat_sessions SET message_count = message_count + 2, updated_at = datetime('now') WHERE id = ?",
+          [finalSessionId]
+        );
+      } catch {}
+
       return res.json({
         success: true,
         provider: "Megan AI",
         model: usedModel,
-        conversation_id: conversationId,
+        session_id: finalSessionId,
+        is_new_session: isNewSession,
         reply: answer,
         endpoints: structuredEndpoints,
       });
@@ -328,7 +371,133 @@ export function registerMeganAIRoutes(app: Express): void {
     }
   });
 
+  // ─── GET /api/v2/megan-ai/sessions ─────────────────────────────────────
+  // List user's recent chat sessions (last 30)
+  app.get("/api/v2/megan-ai/sessions", async (req: Request, res: Response) => {
+    try {
+      const uid = (req.query.uid as string) || "";
+      if (!uid) return res.status(400).json({ success: false, error: "uid required" });
+
+      const sessions = await d1Query(
+        "SELECT id, title, message_count, created_at, updated_at FROM ai_chat_sessions WHERE user_id = ? ORDER BY updated_at DESC LIMIT 30",
+        [uid]
+      );
+      return res.json({ success: true, count: sessions.length, sessions });
+    } catch (e: any) {
+      return res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  // ─── GET /api/v2/megan-ai/sessions/:id ─────────────────────────────────
+  // Load a full session with messages
+  app.get("/api/v2/megan-ai/sessions/:id", async (req: Request, res: Response) => {
+    try {
+      const sessionId = String(req.params.id);
+      const uid = (req.query.uid as string) || "";
+
+      // Verify ownership (if session has user_id)
+      const session = await d1Query(
+        "SELECT * FROM ai_chat_sessions WHERE id = ?",
+        [sessionId]
+      );
+      if (session.length === 0) {
+        return res.status(404).json({ success: false, error: "Session not found" });
+      }
+      const s = session[0];
+      if (s.user_id && s.user_id !== uid) {
+        return res.status(403).json({ success: false, error: "Not your session" });
+      }
+
+      const messages = await d1Query(
+        "SELECT id, role, content, endpoints, model_used, created_at FROM ai_chat_messages WHERE session_id = ? ORDER BY id ASC LIMIT 200",
+        [sessionId]
+      );
+
+      // Parse endpoints JSON
+      const parsed = messages.map((m: any) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        endpoints: m.endpoints ? (() => { try { return JSON.parse(m.endpoints); } catch { return []; } })() : [],
+        model_used: m.model_used,
+        created_at: m.created_at,
+      }));
+
+      return res.json({
+        success: true,
+        session: {
+          id: s.id,
+          title: s.title,
+          message_count: s.message_count,
+          created_at: s.created_at,
+          updated_at: s.updated_at,
+        },
+        messages: parsed,
+      });
+    } catch (e: any) {
+      return res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  // ─── DELETE /api/v2/megan-ai/sessions/:id ──────────────────────────────
+  app.delete("/api/v2/megan-ai/sessions/:id", async (req: Request, res: Response) => {
+    try {
+      const sessionId = String(req.params.id);
+      const uid = (req.query.uid as string) || "";
+
+      const session = await d1Query(
+        "SELECT user_id FROM ai_chat_sessions WHERE id = ?",
+        [sessionId]
+      );
+      if (session.length === 0) {
+        return res.status(404).json({ success: false, error: "Not found" });
+      }
+      if (session[0].user_id && session[0].user_id !== uid) {
+        return res.status(403).json({ success: false, error: "Not your session" });
+      }
+
+      await d1Execute("DELETE FROM ai_chat_messages WHERE session_id = ?", [sessionId]);
+      await d1Execute("DELETE FROM ai_chat_sessions WHERE id = ?", [sessionId]);
+
+      return res.json({ success: true, deleted: sessionId });
+    } catch (e: any) {
+      return res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  // ─── PATCH /api/v2/megan-ai/sessions/:id ───────────────────────────────
+  // Rename a session
+  app.patch("/api/v2/megan-ai/sessions/:id", async (req: Request, res: Response) => {
+    try {
+      const sessionId = String(req.params.id);
+      const uid = (req.query.uid as string) || "";
+      const title = (req.body?.title as string || "").trim().slice(0, 100);
+      if (!title) return res.status(400).json({ success: false, error: "title required" });
+
+      const session = await d1Query(
+        "SELECT user_id FROM ai_chat_sessions WHERE id = ?",
+        [sessionId]
+      );
+      if (session.length === 0) return res.status(404).json({ success: false, error: "Not found" });
+      if (session[0].user_id && session[0].user_id !== uid) {
+        return res.status(403).json({ success: false, error: "Not your session" });
+      }
+
+      await d1Execute(
+        "UPDATE ai_chat_sessions SET title = ?, updated_at = datetime('now') WHERE id = ?",
+        [title, sessionId]
+      );
+      return res.json({ success: true, title });
+    } catch (e: any) {
+      return res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
   console.log("✅ Megan AI Routes Registered:");
-  console.log("  GET  /api/v2/megan-ai?q=... (dynamic schema search)");
-  console.log("  POST /api/v2/megan-ai/chat  (multi-turn chat, 10/min rate limit)");
+  console.log("  GET    /api/v2/megan-ai?q=...");
+  console.log("  POST   /api/v2/megan-ai/chat  (10/min rate limit)");
+  console.log("  GET    /api/v2/megan-ai/sessions?uid=...");
+  console.log("  GET    /api/v2/megan-ai/sessions/:id");
+  console.log("  PATCH  /api/v2/megan-ai/sessions/:id");
+  console.log("  DELETE /api/v2/megan-ai/sessions/:id");
 }
