@@ -2102,6 +2102,12 @@ const moviesEndpoints: ApiEndpoint[] = [
     [], "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
     [SC.SUCCESS, SC.SERVER_ERROR], 60),
 
+  createEndpoint("/api/v2/movies/banners", "GET",
+    "6 rotating hero banners for the homepage. Mix of movie + TV with landscape backdrops. Use ?type=movie or ?type=tv for one kind only.",
+    [{ name: "type", type: "string", required: false, description: "mixed (default), movie, or tv", default: "mixed", options: ["mixed", "movie", "tv"] }],
+    "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
   createEndpoint("/api/v2/movies/search", "GET",
     "Search movies and TV shows by title. Returns id, slug, title, year, rating, poster.",
     [{ name: "q", type: "string", required: true, description: "Search query", default: "fight club" }],
