@@ -2355,6 +2355,8 @@ export const allEndpoints: ApiEndpoint[] = [
   // Megan AI & Reviews
   ...meganAIEndpoints,
   ...reviewEndpoints,
+  ...moviesEndpoints,
+
 ];
 
 
