@@ -429,6 +429,19 @@ export function registerMoviesRoutes(app: Express): void {
     }
   });
 
+  // ─── HOME BANNERS ────────────────────────────────────────────────────────
+  // 6 rotating hero banners. Type: "mixed" (default), "movie", or "tv"
+  app.get("/api/v2/movies/banners", async (req: Request, res: Response) => {
+    const type = (req.query.type as string) || "mixed";
+    try {
+      const banners = await buildBanners(type);
+      return res.json({ success: true, type, count: banners.length, banners });
+    } catch (e: any) {
+      console.error("[movies/banners]", e.message);
+      return publicError(res);
+    }
+  });
+
   console.log("✅ Megan Movies Routes Registered:");
   console.log("  GET /api/v2/movies/home");
   console.log("  GET /api/v2/movies/search?q=");
