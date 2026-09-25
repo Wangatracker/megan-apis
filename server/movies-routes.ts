@@ -296,6 +296,139 @@ export function registerMoviesRoutes(app: Express): void {
     } catch { return publicError(res); }
   });
 
+  // ─── SINGLE-ROW ENDPOINTS ────────────────────────────────────────────────
+  // Simple list endpoints. All paginate internally and return the same shape.
+
+  async function rowHandler(type: "movie" | "tv", source: string, req: Request, res: Response) {
+    try {
+      let data: any = null;
+      switch (source) {
+        case "trending": data = await tmdb.trending(type); break;
+        case "popular": data = await tmdb.popular(type); break;
+        case "top-rated": data = await tmdb.topRated(type); break;
+        case "now-playing": data = await tmdb.nowPlaying(); break;
+        case "upcoming": data = await tmdb.upcoming(); break;
+        case "on-the-air": data = await tmdb.onTheAir(); break;
+        case "airing-today": data = await tmdb.airingToday(); break;
+      }
+      const results = (data?.results || []).map(normalizeItem);
+      return res.json({ success: true, type, source, results });
+    } catch (e: any) {
+      console.error(`[movies/${source}]`, e.message);
+      return publicError(res);
+    }
+  }
+
+  app.get("/api/v2/movies/trending", async (req: Request, res: Response) => {
+    const type = (req.query.type as string) === "tv" ? "tv" : "movie";
+    return rowHandler(type, "trending", req, res);
+  });
+
+  app.get("/api/v2/movies/popular", async (req: Request, res: Response) => {
+    const type = (req.query.type as string) === "tv" ? "tv" : "movie";
+    return rowHandler(type, "popular", req, res);
+  });
+
+  app.get("/api/v2/movies/top-rated", async (req: Request, res: Response) => {
+    const type = (req.query.type as string) === "tv" ? "tv" : "movie";
+    return rowHandler(type, "top-rated", req, res);
+  });
+
+  app.get("/api/v2/movies/now-playing", async (_req: Request, res: Response) => {
+    return rowHandler("movie", "now-playing", _req, res);
+  });
+
+  app.get("/api/v2/movies/upcoming", async (_req: Request, res: Response) => {
+    return rowHandler("movie", "upcoming", _req, res);
+  });
+
+  app.get("/api/v2/movies/on-the-air", async (_req: Request, res: Response) => {
+    return rowHandler("tv", "on-the-air", _req, res);
+  });
+
+  app.get("/api/v2/movies/airing-today", async (_req: Request, res: Response) => {
+    return rowHandler("tv", "airing-today", _req, res);
+  });
+
+  // ─── GENRE SHORTCUTS ─────────────────────────────────────────────────────
+  // Clean URLs like /api/v2/movies/comedy → /discover?with_genres=35
+
+  const GENRE_MAP: Record<string, { movie: number; tv: number }> = {
+    "action": { movie: 28, tv: 10759 },
+    "comedy": { movie: 35, tv: 35 },
+    "sci-fi": { movie: 878, tv: 10765 },
+    "scifi": { movie: 878, tv: 10765 },
+    "horror": { movie: 27, tv: 9648 },
+    "drama": { movie: 18, tv: 18 },
+    "romance": { movie: 10749, tv: 10749 },
+    "thriller": { movie: 53, tv: 80 },
+    "animation": { movie: 16, tv: 16 },
+    "documentary": { movie: 99, tv: 99 },
+    "family": { movie: 10751, tv: 10751 },
+    "fantasy": { movie: 14, tv: 10765 },
+    "mystery": { movie: 9648, tv: 9648 },
+    "crime": { movie: 80, tv: 80 },
+    "adventure": { movie: 12, tv: 10759 },
+    "war": { movie: 10752, tv: 10768 },
+    "western": { movie: 37, tv: 37 },
+    "musical": { movie: 10402, tv: 10402 },
+    "history": { movie: 36, tv: 10768 },
+  };
+
+  app.get("/api/v2/movies/:genre", async (req: Request, res: Response, next) => {
+    const genreSlug = String(req.params.genre).toLowerCase();
+    const entry = GENRE_MAP[genreSlug];
+    if (!entry) return next(); // fall through to other routes
+
+    const type = (req.query.type as string) === "tv" ? "tv" : "movie";
+    const genreId = entry[type];
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+
+    try {
+      const data = await tmdb.discover(type, {
+        with_genres: String(genreId),
+        sort_by: "popularity.desc",
+        page: String(page),
+      });
+      const results = (data?.results || []).map(normalizeItem);
+      return res.json({
+        success: true,
+        type,
+        genre: genreSlug,
+        genre_id: genreId,
+        page,
+        total_pages: data?.total_pages || 1,
+        results,
+      });
+    } catch (e: any) {
+      return publicError(res);
+    }
+  });
+
+  // ─── RECOMMENDED ─────────────────────────────────────────────────────────
+  // Based on a specific title: /api/v2/movies/recommended?type=movie&id=550
+  app.get("/api/v2/movies/recommended", async (req: Request, res: Response) => {
+    const type = (req.query.type as string) === "tv" ? "tv" : "movie";
+    const idRaw = req.query.id as string;
+    if (!idRaw) return publicError(res, 400, "id required");
+
+    const id = parseSlug(idRaw);
+    if (!id) return publicError(res, 400, "Invalid id");
+
+    try {
+      let data: any;
+      if (type === "movie") data = await tmdb.movie(id) as any;
+      else data = await tmdb.tv(id) as any;
+
+      const results = ((data as any)?.recommendations?.results || [])
+        .slice(0, 20)
+        .map(normalizeItem);
+      return res.json({ success: true, type, based_on: id, results });
+    } catch (e: any) {
+      return publicError(res);
+    }
+  });
+
   console.log("✅ Megan Movies Routes Registered:");
   console.log("  GET /api/v2/movies/home");
   console.log("  GET /api/v2/movies/search?q=");
@@ -308,4 +441,13 @@ export function registerMoviesRoutes(app: Express): void {
   console.log("  GET /api/v2/movies/movie/:slug/downloads");
   console.log("  GET /api/v2/movies/tv/:slug/season/:n/episode/:m/streams");
   console.log("  GET /api/v2/movies/tv/:slug/season/:n/episode/:m/downloads");
+  console.log("  GET /api/v2/movies/trending?type=movie|tv");
+  console.log("  GET /api/v2/movies/popular?type=movie|tv");
+  console.log("  GET /api/v2/movies/top-rated?type=movie|tv");
+  console.log("  GET /api/v2/movies/now-playing");
+  console.log("  GET /api/v2/movies/upcoming");
+  console.log("  GET /api/v2/movies/on-the-air");
+  console.log("  GET /api/v2/movies/airing-today");
+  console.log("  GET /api/v2/movies/:genre (action|comedy|sci-fi|horror|drama|...)");
+  console.log("  GET /api/v2/movies/recommended?type=&id=");
 }
