@@ -451,6 +451,13 @@ export const apiCategories: ApiCategory[] = [
         createdAt: "2026-05-01T10:00:00.000Z",
       },
       {
+        id: "movies",
+        name: "Megan Movies",
+        description: "Megan Movies — discover, browse, and stream movies & TV shows with full metadata, cast, seasons, streams, and downloads. Powered by Megan Tech.",
+        categoryId: "media",
+        createdAt: "2026-09-25T08:00:00.000Z",
+      },
+      {
         id: "anime-streaming",
         name: "Anime & Tokusatsu",
         description: "Tokusatsu (Kamen Rider, Super Sentai, Ultraman) episode streaming and search.",
@@ -2082,6 +2089,157 @@ const meganAIEndpoints: ApiEndpoint[] = [
     { name: "q", type: "string", required: true, description: "Your question about Megan APIs", default: "How do I download a TikTok video?" }
   ], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "Megan AI", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
   createEndpoint("/api/v2/megan-ai/stats", "GET", "Get Megan AI usage statistics - total conversations, model usage, and fallback count.", [], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "Megan AI", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+];
+
+
+// ─── MEGAN MOVIES ─────────────────────────────────────────────────────────
+const MOVIES_CREATED = "2026-09-25T08:00:00.000Z";
+
+const moviesEndpoints: ApiEndpoint[] = [
+  // ─── DISCOVERY ───
+  createEndpoint("/api/v2/movies/home", "GET",
+    "Megan Movies homepage — 18 curated rows (trending, popular, top-rated, genres, etc) in one request.",
+    [], "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/v2/movies/search", "GET",
+    "Search movies and TV shows by title. Returns id, slug, title, year, rating, poster.",
+    [{ name: "q", type: "string", required: true, description: "Search query", default: "fight club" }],
+    "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/v2/movies/browse", "GET",
+    "Browse movies or TV with filters (genre, year, sort, pagination).",
+    [
+      { name: "type", type: "string", required: false, description: "movie or tv", default: "movie", options: ["movie", "tv"] },
+      { name: "genre", type: "string", required: false, description: "Genre ID (use /genres to list)" },
+      { name: "year", type: "string", required: false, description: "Release year filter" },
+      { name: "sort", type: "string", required: false, description: "Sort order", default: "popularity.desc" },
+      { name: "page", type: "string", required: false, description: "Page number", default: "1" },
+    ],
+    "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/v2/movies/genres", "GET",
+    "List all available genres for movies or TV.",
+    [{ name: "type", type: "string", required: false, description: "movie or tv", default: "movie", options: ["movie", "tv"] }],
+    "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  // ─── LISTS ───
+  createEndpoint("/api/v2/movies/trending", "GET",
+    "Trending movies or TV shows this week.",
+    [{ name: "type", type: "string", required: false, description: "movie or tv", default: "movie", options: ["movie", "tv"] }],
+    "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/v2/movies/popular", "GET",
+    "Most popular movies or TV shows right now.",
+    [{ name: "type", type: "string", required: false, description: "movie or tv", default: "movie", options: ["movie", "tv"] }],
+    "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/v2/movies/top-rated", "GET",
+    "Highest rated movies or TV shows of all time.",
+    [{ name: "type", type: "string", required: false, description: "movie or tv", default: "movie", options: ["movie", "tv"] }],
+    "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/v2/movies/now-playing", "GET",
+    "Movies currently playing in cinemas.",
+    [], "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/v2/movies/upcoming", "GET",
+    "Movies coming soon to cinemas.",
+    [], "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/v2/movies/on-the-air", "GET",
+    "TV shows currently airing this week.",
+    [], "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/v2/movies/airing-today", "GET",
+    "TV shows airing today.",
+    [], "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/v2/movies/recommended", "GET",
+    "Movies or TV shows recommended based on a given title.",
+    [
+      { name: "type", type: "string", required: false, description: "movie or tv", default: "movie", options: ["movie", "tv"] },
+      { name: "id", type: "string", required: true, description: "Slug or numeric ID of reference title", default: "550" },
+    ],
+    "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+
+  // ─── GENRE SHORTCUTS ───
+  createEndpoint("/api/v2/movies/:genre", "GET",
+    "Genre shortcut. Try: action, comedy, sci-fi, horror, drama, romance, thriller, animation, documentary, family, fantasy, mystery, crime, adventure, war, western, musical, history.",
+    [
+      { name: "genre", type: "string", required: true, description: "Genre slug", default: "action" },
+      { name: "type", type: "string", required: false, description: "movie or tv", default: "movie", options: ["movie", "tv"] },
+      { name: "page", type: "string", required: false, description: "Page number", default: "1" },
+    ],
+    "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  // ─── DETAIL ───
+  createEndpoint("/api/v2/movies/movie/:slug", "GET",
+    "Full movie metadata: title, year, rating, runtime, overview, genres, poster, backdrop, cast (20), similar titles.",
+    [{ name: "slug", type: "string", required: true, description: "Movie slug or ID", default: "550-fight-club-1999" }],
+    "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/v2/movies/tv/:slug", "GET",
+    "Full TV show metadata: title, year, rating, overview, genres, seasons list, cast (20), similar titles.",
+    [{ name: "slug", type: "string", required: true, description: "TV show slug or ID", default: "1399-game-of-thrones-2011" }],
+    "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/v2/movies/tv/:slug/season/:n", "GET",
+    "List all episodes in a TV season with titles, air dates, stills, ratings.",
+    [
+      { name: "slug", type: "string", required: true, description: "TV show slug or ID", default: "1399-game-of-thrones-2011" },
+      { name: "n", type: "string", required: true, description: "Season number", default: "1" },
+    ],
+    "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+
+  // ─── STREAMS ───
+  createEndpoint("/api/v2/movies/movie/:slug/streams", "GET",
+    "Get playable stream URLs (HLS playlists) for a movie. Multiple servers, up to 4K.",
+    [{ name: "slug", type: "string", required: true, description: "Movie slug or ID", default: "550-fight-club-1999" }],
+    "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/v2/movies/tv/:slug/season/:n/episode/:m/streams", "GET",
+    "Get playable stream URLs (HLS) for a TV episode.",
+    [
+      { name: "slug", type: "string", required: true, description: "TV show slug or ID", default: "1399-game-of-thrones-2011" },
+      { name: "n", type: "string", required: true, description: "Season number", default: "1" },
+      { name: "m", type: "string", required: true, description: "Episode number", default: "1" },
+    ],
+    "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+
+  // ─── DOWNLOADS ───
+  createEndpoint("/api/v2/movies/movie/:slug/downloads", "GET",
+    "Direct download links for a movie with quality, size, source, and file info.",
+    [{ name: "slug", type: "string", required: true, description: "Movie slug or ID", default: "550-fight-club-1999" }],
+    "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/v2/movies/tv/:slug/season/:n/episode/:m/downloads", "GET",
+    "Direct download links for a TV episode with quality and size.",
+    [
+      { name: "slug", type: "string", required: true, description: "TV show slug or ID", default: "1399-game-of-thrones-2011" },
+      { name: "n", type: "string", required: true, description: "Season number", default: "1" },
+      { name: "m", type: "string", required: true, description: "Episode number", default: "1" },
+    ],
+    "json", "media", "movies", "v2", MOVIES_CREATED, "Megan Movies",
+    [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
 ];
 
 const reviewEndpoints: ApiEndpoint[] = [
