@@ -37,6 +37,62 @@ function normalizeCast(credits: any) {
   return cast;
 }
 
+// ─── HOME BANNERS BUILDER ──────────────────────────────────────────────────
+async function buildBanners(type: "mixed" | "movie" | "tv"): Promise<any[]> {
+  const picks: any[] = [];
+  const seen = new Set<number>();
+
+  async function pull(source: string, itemType: "movie" | "tv") {
+    if (picks.length >= 6) return;
+    try {
+      let data: any;
+      if (source === "trending") data = await tmdb.trending(itemType);
+      else if (source === "popular") data = await tmdb.popular(itemType);
+      else if (source === "top-rated") data = await tmdb.topRated(itemType);
+      else return;
+
+      for (const item of (data?.results || [])) {
+        if (picks.length >= 6) break;
+        if (seen.has(item.id)) continue;
+        if (!item.backdrop_path) continue;
+        seen.add(item.id);
+        const title = item.title || item.name || "Untitled";
+        const year = (item.release_date || item.first_air_date || "").slice(0, 4);
+        picks.push({
+          id: item.id,
+          slug: buildSlug(item.id, title, year ? parseInt(year) : null),
+          title,
+          year: year ? parseInt(year) : null,
+          rating: item.vote_average ? Math.round(item.vote_average * 10) / 10 : null,
+          overview: item.overview || "",
+          backdrop: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : "",
+          poster: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : "",
+          type: itemType,
+        });
+      }
+    } catch (e: any) {
+      console.error(`[banners] ${source}/${itemType}:`, e.message);
+    }
+  }
+
+  if (type === "movie") {
+    await pull("trending", "movie");
+    await pull("popular", "movie");
+    await pull("top-rated", "movie");
+  } else if (type === "tv") {
+    await pull("trending", "tv");
+    await pull("popular", "tv");
+    await pull("top-rated", "tv");
+  } else {
+    await pull("trending", "movie");
+    await pull("trending", "tv");
+    await pull("popular", "movie");
+    await pull("popular", "tv");
+  }
+
+  return picks.slice(0, 6);
+}
+
 export function registerMoviesRoutes(app: Express): void {
   // ─── HOMEPAGE ────────────────────────────────────────────────────────────
   app.get("/api/v2/movies/home", async (_req: Request, res: Response) => {
