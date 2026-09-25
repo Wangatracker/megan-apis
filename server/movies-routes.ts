@@ -20,6 +20,7 @@ function normalizeItem(item: any) {
     slug: buildSlug(item.id, title, year),
     title,
     year,
+    release_date: date || null,
     rating: item.vote_average ? Math.round(item.vote_average * 10) / 10 : null,
     poster: posterUrl(item.poster_path, "w342"),
     type: mediaType,
@@ -338,8 +339,26 @@ export function registerMoviesRoutes(app: Express): void {
     return rowHandler("movie", "now-playing", _req, res);
   });
 
-  app.get("/api/v2/movies/upcoming", async (_req: Request, res: Response) => {
-    return rowHandler("movie", "upcoming", _req, res);
+  // Upcoming movies — filters out anything already released
+  app.get("/api/v2/movies/upcoming", async (req: Request, res: Response) => {
+    try {
+      const data = await tmdb.discover("movie", {
+        sort_by: "primary_release_date.asc",
+        "primary_release_date.gte": new Date().toISOString().slice(0, 10),
+        "vote_count.gte": "5",
+      });
+      const results = (data?.results || [])
+        .map(normalizeItem)
+        .filter((m: any) => {
+          if (!m.release_date) return false;
+          return new Date(m.release_date).getTime() >= Date.now() - 86400000; // today or future
+        })
+        .slice(0, 20);
+      return res.json({ success: true, type: "movie", source: "upcoming", results });
+    } catch (e: any) {
+      console.error("[movies/upcoming]", e.message);
+      return publicError(res);
+    }
   });
 
   app.get("/api/v2/movies/on-the-air", async (_req: Request, res: Response) => {
