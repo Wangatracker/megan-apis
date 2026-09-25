@@ -453,11 +453,13 @@ export function registerMoviesRoutes(app: Express): void {
   app.get("/api/v2/movies/banners", async (req: Request, res: Response) => {
     const type = (req.query.type as string) || "mixed";
     try {
-      const banners = await buildBanners(type);
+      const banners = await buildBanners(type as any);
       return res.json({ success: true, type, count: banners.length, banners });
     } catch (e: any) {
-      console.error("[movies/banners]", e.message);
-      return publicError(res);
+      console.error("[movies/banners] ERROR:", e.message);
+      console.error("[movies/banners] STACK:", e.stack);
+      // Return real error in dev for debugging
+      return res.status(500).json({ success: false, error: e.message, stack: e.stack?.split("\n").slice(0, 5) });
     }
   });
 
