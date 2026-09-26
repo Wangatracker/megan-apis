@@ -106,49 +106,6 @@ interface ToolCall {
   id?: string;
 }
 
-const TOOL_PROMPT = `
-You have tools. Use them BEFORE responding when the user's message needs information.
-
-TOOLS:
-1. search_endpoints — find Megan API endpoints by keyword
-2. search_hosting — find hosting providers by keyword
-3. get_endpoint_details — get info about a specific endpoint (needs "path")
-4. get_ecosystem — list all Megan ecosystem services
-
-HOW TO CALL A TOOL:
-Output this on its own line, then continue with a natural reply AFTER seeing the tool result:
-{"tool":"search_hosting","query":"deployment"}
-
-CRITICAL DECISION RULES:
-
-✅ CALL search_hosting WHEN:
-- User mentions: deploy, deployment, host, hosting, go live, publish, put online, servers, backend infra
-- Example: "how do I deploy this?" → {"tool":"search_hosting","query":"deploy beginner"}
-- Example: "I need a server" → {"tool":"search_hosting","query":"servers"}
-- Example: "where can I host this" → {"tool":"search_hosting","query":"hosting"}
-
-✅ CALL search_endpoints WHEN:
-- User describes something they want to BUILD using an API
-- User asks "is there an API for X?" or "can Megan do X?"
-- User mentions a concrete task: TikTok downloader, YouTube tool, AI chat, image generator, bot, etc.
-- Example: "I want to build a TikTok downloader" → {"tool":"search_endpoints","query":"tiktok download"}
-- Example: "can Megan generate images?" → {"tool":"search_endpoints","query":"image generation"}
-- Example: "I need a YouTube tool" → {"tool":"search_endpoints","query":"youtube"}
-
-❌ DO NOT CALL ANY TOOL when:
-- User says hi/hello/thanks/cool/ok/etc.
-- User is chatting casually
-- User says "I can't code" or "I'm new" (just be supportive)
-- User asks about you, the platform, or general concepts
-- User asks a question you can already answer from your system prompt
-
-IMPORTANT:
-- It's OK to call a tool even if the user didn't explicitly ask — if their message implies it, call it.
-- After seeing the tool result, respond naturally. NEVER paste JSON.
-- Do not say "Let me search..." — just call the tool silently and respond.
-- The tool result includes real hosting providers or endpoints. Use them in your reply.
-`;
-
 // ─── SYSTEM PROMPT ─────────────────────────────────────────────────────────
 function buildSystemPrompt(userMessage: string): string {
   const platformSummary = formatPlatformSummaryForPrompt();
@@ -196,64 +153,43 @@ ${ecosystem}
 BEGINNER CONCEPTS (use when relevant):
 ${beginnerText}
 
-${TOOL_PROMPT}
-
 Remember: you are a conversation partner first, a helpful guide second. Megan APIs is context you draw from, not the reason you speak.`;
 }
 
-// ─── TOOL EXECUTION ────────────────────────────────────────────────────────
-async function executeTool(call: ToolCall): Promise<any> {
-  if (call.tool === "search_endpoints" && call.query) {
-    const results = searchEndpoints(call.query, 6);
-    return {
-      endpoints: results.map(ep => ({
-        path: ep.path,
-        method: ep.method,
-        description: ep.description,
-      })),
-    };
-  }
-  if (call.tool === "search_hosting") {
-    const results = searchHosting(call.query || "", 4);
-    return { hosting: results };
-  }
-  if (call.tool === "get_endpoint_details" && call.path) {
-    const ep = allEndpoints.find(e => e.path === call.path);
-    if (!ep) return { error: "Endpoint not found" };
-    return {
-      endpoint: {
-        path: ep.path,
-        method: ep.method,
-        description: ep.description,
-        params: ep.params.map(p => ({ name: p.name, type: p.type, required: p.required, description: p.description })),
-        category: ep.category,
-        provider: ep.provider,
-      },
-    };
-  }
-  if (call.tool === "get_ecosystem") {
-    return { services: getEcosystem() };
-  }
-  return { error: "Unknown tool" };
+// ─── INTENT CLASSIFIER (deterministic, no LLM) ────────────────────────────
+interface Intent {
+  needs_endpoints: boolean;
+  needs_hosting: boolean;
+  endpoint_query?: string;
+  hosting_query?: string;
 }
 
-// ─── PARSE TOOL CALLS FROM LLM OUTPUT ──────────────────────────────────────
-function extractToolCalls(text: string): ToolCall[] {
-  const calls: ToolCall[] = [];
-  // Match {"tool":"...","query":"..."} or similar
-  const regex = /\{"tool"\s*:\s*"([^"]+)"[^}]*\}/g;
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(text)) !== null) {
-    try {
-      const parsed = JSON.parse(match[0]);
-      if (parsed.tool) calls.push(parsed as ToolCall);
-    } catch {}
-  }
-  return calls;
-}
+function classifyIntent(message: string, history: HistoryMsg[]): Intent {
+  const m = message.toLowerCase().trim();
+  const recentText = history.slice(-4).map(h => h.content.toLowerCase()).join(" ");
+  const combined = `${recentText} ${m}`;
 
-function stripToolCalls(text: string): string {
-  return text.replace(/\{"tool"\s*:\s*"[^"]+"[^}]*\}/g, "").trim();
+  // Pure greetings — skip everything
+  const pureGreeting = /^(hi|hey|hello|yo|sup|thanks|thank you|ty|ok|okay|cool|nice|bye|lol|haha|np|good morning|good evening|good afternoon|how are you|what'?s up)[\s\?\!.,]*$/i;
+  if (pureGreeting.test(m)) {
+    return { needs_endpoints: false, needs_hosting: false };
+  }
+
+  // HOSTING — deploy, host, server, publish, launch
+  const hostingPattern = /\b(deploy|deployment|host|hosting|server|servers|go live|publish|put online|production|launch|ship it|make it live)\b/i;
+  const needs_hosting = hostingPattern.test(m);
+
+  // ENDPOINT — build/create/develop + tasks
+  const buildPattern = /\b(api|endpoint|build|create|make|develop|integrat|downloader|generator|translator|stalker|scraper|tool for|want.*(?:api|tool|endpoint)|need.*(?:api|tool|endpoint)|looking for.*(?:api|tool))\b/i;
+  const taskPattern = /\b(tiktok|youtube|instagram|twitter|facebook|spotify|soundcloud|discord|whatsapp|telegram|reddit|anime|movie|netflix|ai chat|gpt|image gen|qr code|weather|translate|download.*video|download.*song)\b/i;
+  const needs_endpoints = (buildPattern.test(combined) || taskPattern.test(m)) && !needs_hosting;
+
+  return {
+    needs_endpoints,
+    needs_hosting,
+    endpoint_query: needs_endpoints ? message : undefined,
+    hosting_query: needs_hosting ? "deployment hosting" : undefined,
+  };
 }
 
 // ─── MAIN CHAT HANDLER ─────────────────────────────────────────────────────
@@ -264,20 +200,43 @@ async function handleChat(
   history: HistoryMsg[],
   fallbacks: { askOverchat: Function; askMeganAI: Function; askGeminiLite: Function }
 ): Promise<{ reply: string; cards: any[]; usedModel: string }> {
-  const systemPrompt = buildSystemPrompt(message);
+  // 1. Classify intent
+  const intent = classifyIntent(message, history);
 
-  // Build message list for LLM
+  // 2. Run tools BEFORE the LLM
+  let toolContext = "";
+  const cards: any[] = [];
+
+  if (intent.needs_hosting) {
+    const providers = searchHosting(intent.hosting_query || "deployment", 4);
+    if (providers.length > 0) {
+      toolContext += `\n\nHOSTING OPTIONS (use these in your reply):\n${formatHostingForPrompt(providers)}`;
+      for (const p of providers) cards.push({ type: "hosting", id: p.id });
+    }
+  }
+
+  if (intent.needs_endpoints) {
+    const endpoints = searchEndpoints(intent.endpoint_query || message, 6);
+    if (endpoints.length > 0) {
+      toolContext += `\n\nRELEVANT MEGAN ENDPOINTS (mention the most fitting one):\n${formatEndpointsForPrompt(endpoints)}`;
+      for (const ep of endpoints) {
+        cards.push({ type: "endpoint", path: ep.path, method: ep.method, description: ep.description });
+      }
+    }
+  }
+
+  // 3. Build prompt with tool context injected
+  const systemPrompt = buildSystemPrompt(message) + toolContext;
+
   const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
     { role: "system", content: systemPrompt },
   ];
-  // Add history (last 15 messages)
   for (const h of history) {
     messages.push({ role: h.role, content: h.content });
   }
-  // Add current message
   messages.push({ role: "user", content: message });
 
-  // ── Primary LLM: Cloudflare ──
+  // 4. Ask the LLM
   let rawReply = "";
   let usedModel = "";
   let lastError = "";
@@ -292,7 +251,6 @@ async function handleChat(
     }
   }
 
-  // ── Fallbacks ──
   if (!rawReply) {
     const combined = history.map(h => `${h.role}: ${h.content}`).join("\n") + `\nuser: ${message}`;
     const fbList = [
@@ -315,84 +273,10 @@ async function handleChat(
     return { reply: "Sorry, I'm having trouble thinking right now. Try again in a moment.", cards: [], usedModel: "none" };
   }
 
-  // ── Check for tool calls ──
-  const toolCalls = extractToolCalls(rawReply);
-  let finalReply = stripToolCalls(rawReply);
-  const cards: any[] = [];
+  // 5. Strip any accidental JSON the LLM might output
+  const finalReply = rawReply.replace(/\{"tool"\s*:[^}]*\}/g, "").trim() || rawReply;
 
-  if (toolCalls.length > 0) {
-    console.log(`[Hinatu] LLM called ${toolCalls.length} tool(s):`, toolCalls.map(t => t.tool));
-
-    // Execute each tool
-    const toolResults: any[] = [];
-    for (const call of toolCalls) {
-      try {
-        const result = await executeTool(call);
-        toolResults.push({ call, result });
-
-        // Build cards for the frontend
-        if (call.tool === "search_endpoints" && result.endpoints) {
-          for (const ep of result.endpoints) {
-            cards.push({
-              type: "endpoint",
-              path: ep.path,
-              method: ep.method,
-              description: ep.description,
-            });
-          }
-        }
-        if (call.tool === "search_hosting" && result.hosting) {
-          for (const p of result.hosting) {
-            cards.push({ type: "hosting", id: p.id });
-          }
-        }
-      } catch (e: any) {
-        console.error(`[Hinatu] tool ${call.tool} failed:`, e.message);
-      }
-    }
-
-    // Second LLM call with tool results
-    const toolContext = toolResults.map(tr => {
-      if (tr.call.tool === "search_endpoints") {
-        return `Tool result (search_endpoints "${tr.call.query}"):\n${formatEndpointsForPrompt(tr.result.endpoints || [])}`;
-      }
-      if (tr.call.tool === "search_hosting") {
-        return `Tool result (search_hosting "${tr.call.query}"):\n${formatHostingForPrompt(tr.result.hosting || [])}`;
-      }
-      if (tr.call.tool === "get_endpoint_details") {
-        return `Tool result (endpoint details):\n${JSON.stringify(tr.result.endpoint)}`;
-      }
-      if (tr.call.tool === "get_ecosystem") {
-        return `Tool result (ecosystem):\n${formatEcosystemForPrompt()}`;
-      }
-      return `Tool result: ${JSON.stringify(tr.result)}`;
-    }).join("\n\n");
-
-    const messagesWithTools = [
-      ...messages,
-      { role: "assistant" as const, content: rawReply },
-      { role: "user" as const, content: `[Tool results]\n${toolContext}\n\nNow respond naturally to the user using this information. Do not paste the JSON. Stay in character as Hinatu.` },
-    ];
-
-    try {
-      if (cfAiConfigured()) {
-        finalReply = await cfChat(messagesWithTools);
-        usedModel += " + tools";
-      }
-    } catch (e: any) {
-      console.error(`[Hinatu] post-tool LLM failed:`, e.message);
-      if (!finalReply) {
-        finalReply = "I found some info but had trouble putting it together. Can you try asking again?";
-      }
-    }
-
-    // If LLM still output tool calls, strip again
-    finalReply = stripToolCalls(finalReply);
-  }
-
-  if (!finalReply) {
-    finalReply = "Hmm, I'm not sure how to answer that. Can you rephrase?";
-  }
+  console.log(`[Hinatu] intent: endpoints=${intent.needs_endpoints} hosting=${intent.needs_hosting}, cards=${cards.length}`);
 
   return { reply: finalReply, cards, usedModel };
 }
