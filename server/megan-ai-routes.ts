@@ -107,7 +107,7 @@ interface ToolCall {
 }
 
 const TOOL_PROMPT = `
-You have tools you can call when the conversation genuinely needs information.
+You have tools. Use them BEFORE responding when the user's message needs information.
 
 TOOLS:
 1. search_endpoints — find Megan API endpoints by keyword
@@ -115,18 +115,38 @@ TOOLS:
 3. get_endpoint_details — get info about a specific endpoint (needs "path")
 4. get_ecosystem — list all Megan ecosystem services
 
-TO CALL A TOOL, output a JSON block on its own line, then continue:
-{"tool":"search_endpoints","query":"tiktok download"}
+HOW TO CALL A TOOL:
+Output this on its own line, then continue with a natural reply AFTER seeing the tool result:
+{"tool":"search_hosting","query":"deployment"}
 
-If you don't need a tool, just respond normally.
+CRITICAL DECISION RULES:
 
-RULES:
-- Only call tools when relevant to what the user is actually discussing.
-- Never call tools just because a keyword appeared.
-- Never call search_endpoints for greetings, casual chat, or when the user hasn't asked about building something.
-- Never call search_hosting unless the user mentions deployment, hosting, servers, publishing, going live, or similar.
-- You can call multiple tools if needed.
-- After the tool result, respond naturally using that information. Do not paste raw JSON or dump every field.
+✅ CALL search_hosting WHEN:
+- User mentions: deploy, deployment, host, hosting, go live, publish, put online, servers, backend infra
+- Example: "how do I deploy this?" → {"tool":"search_hosting","query":"deploy beginner"}
+- Example: "I need a server" → {"tool":"search_hosting","query":"servers"}
+- Example: "where can I host this" → {"tool":"search_hosting","query":"hosting"}
+
+✅ CALL search_endpoints WHEN:
+- User describes something they want to BUILD using an API
+- User asks "is there an API for X?" or "can Megan do X?"
+- User mentions a concrete task: TikTok downloader, YouTube tool, AI chat, image generator, bot, etc.
+- Example: "I want to build a TikTok downloader" → {"tool":"search_endpoints","query":"tiktok download"}
+- Example: "can Megan generate images?" → {"tool":"search_endpoints","query":"image generation"}
+- Example: "I need a YouTube tool" → {"tool":"search_endpoints","query":"youtube"}
+
+❌ DO NOT CALL ANY TOOL when:
+- User says hi/hello/thanks/cool/ok/etc.
+- User is chatting casually
+- User says "I can't code" or "I'm new" (just be supportive)
+- User asks about you, the platform, or general concepts
+- User asks a question you can already answer from your system prompt
+
+IMPORTANT:
+- It's OK to call a tool even if the user didn't explicitly ask — if their message implies it, call it.
+- After seeing the tool result, respond naturally. NEVER paste JSON.
+- Do not say "Let me search..." — just call the tool silently and respond.
+- The tool result includes real hosting providers or endpoints. Use them in your reply.
 `;
 
 // ─── SYSTEM PROMPT ─────────────────────────────────────────────────────────
