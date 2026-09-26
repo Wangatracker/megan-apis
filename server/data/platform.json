@@ -1,0 +1,75 @@
+{
+  "creator": {
+    "name": "Tracker Wanga",
+    "role": "CEO, Megan Corporation Technologies",
+    "country": "Kenya",
+    "github": "https://github.com/TrackerWanga",
+    "facebook": "https://www.facebook.com/profile.php?id=100086220715987",
+    "instagram": "https://www.instagram.com/zeen.whispers"
+  },
+
+  "platform": {
+    "name": "Megan APIs",
+    "url": "https://apis.megan.qzz.io",
+    "description": "A developer-first REST API platform with 890+ endpoints covering AI chat, media downloads, social media tools, image processing, OSINT, security, and more. Powered by Megan Tech.",
+    "creator": "Tracker Wanga, Megan Tech",
+    "version": "3.7.0",
+    "total_endpoints": 890,
+    "categories": 15
+  },
+
+  "authentication": {
+    "type": "API key",
+    "how_to_get": "Create an account at apis.megan.qzz.io → Dashboard → API Keys → Generate New Key",
+    "usage": "Add &api_key=YOUR_KEY to any request, or use x-api-key header",
+    "sample": "https://apis.megan.qzz.io/api/ai/gpt?q=hello&api_key=YOUR_KEY"
+  },
+
+  "rate_limits": {
+    "policy": "Advisory — no hard blocks on most endpoints",
+    "monitoring": "Usage is tracked per key. Unusual patterns trigger warnings, not blocks.",
+    "standard": "Most endpoints: 60 req/min"
+  },
+
+  "support": {
+    "whatsapp_channel": "https://whatsapp.com/channel/0029Vb7FYNA8qIzs2P5dcE37",
+    "github": "https://github.com/TrackerWanga"
+  },
+
+  "ecosystem": {
+    "services": [
+      { "name": "Megan APIs", "url": "https://apis.megan.qzz.io", "purpose": "Developer API platform" },
+      { "name": "Megan Host", "url": "https://host.megan.qzz.io", "purpose": "Project hosting" },
+      { "name": "Megan AI", "url": "https://ai.megan.qzz.io", "purpose": "AI services" },
+      { "name": "Megan Auth", "url": "https://auth.megan.qzz.io", "purpose": "Authentication" },
+      { "name": "Megan Chat", "url": "https://chat.megan.qzz.io", "purpose": "Chat platform" },
+      { "name": "Megan Coins", "url": "https://coins.megan.qzz.io", "purpose": "Rewards and economy" },
+      { "name": "Megan Movies", "url": "https://movies.megan.qzz.io", "purpose": "Movies & TV API" },
+      { "name": "Megan Music", "url": "https://music.megan.qzz.io", "purpose": "Music services" },
+      { "name": "Megan Play", "url": "https://play.megan.qzz.io", "purpose": "Games" },
+      { "name": "NorBot", "url": "https://norbot.megan.qzz.io", "purpose": "Bot services" },
+      { "name": "Megan Bots", "url": "https://bots.megan.qzz.io", "purpose": "Bot hosting and tools" },
+      { "name": "Megan Apps", "url": "https://apps.megan.qzz.io", "purpose": "Apps portal" },
+      { "name": "AI Playground", "url": "https://playground.ai.megan.qzz.io", "purpose": "Try AI models" }
+    ]
+  },
+
+  "beginner_concepts": {
+    "api": "An API is a way for two pieces of software to talk to each other. When you call an endpoint, you're asking a server to do something and send back a result.",
+    "rest": "REST is a common style of API that uses URLs and HTTP methods (GET, POST, etc.) to interact with resources.",
+    "api_key": "An API key is a unique code that identifies you when you make requests. It's like a password for your app.",
+    "github": "GitHub is a website where developers store and share code. Many hosting platforms deploy directly from GitHub.",
+    "deployment": "Deployment means putting your project online so other people can use it.",
+    "frontend_backend": "Frontend is what users see (websites, apps). Backend is the server-side logic and data. APIs usually connect the two."
+  },
+
+  "common_projects": [
+    "TikTok downloader",
+    "YouTube tools",
+    "AI chat apps",
+    "Image generators",
+    "Discord/WhatsApp bots",
+    "Simple REST APIs",
+    "Personal websites"
+  ]
+}
