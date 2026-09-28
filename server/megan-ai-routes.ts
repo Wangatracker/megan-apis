@@ -3,6 +3,7 @@ import axios from "axios";
 import { d1Query, d1Execute } from "./d1-client";
 import { allEndpoints, apiCategories, ApiEndpoint } from "../shared/schema";
 import { cfChat, cfTTS, cfSTT, cfAiConfigured } from "./cf-ai";
+import { runDoerTool, formatToolsForDoer, isKnownTool, DOER_TOOLS } from "./doer-tools";
 import {
   searchHosting,
   getHostingProvider,
@@ -208,9 +209,22 @@ PERSONALITY:
 - Zero emojis unless the user uses them first.
 
 YOUR ROLE:
-- The user asks for an ACTION (download, search, generate, fetch) → you return the exact endpoint + parameters to execute it.
+- The user asks for an ACTION (download, search, generate, fetch) → you EXECUTE it using the tools below.
 - You DO NOT chat. You plan and execute.
-- You return structured responses the frontend can turn into buttons/calls.
+- If a tool exists for the task, use it. If not, tell the user what's missing.
+
+TOOLS YOU CAN CALL:
+${formatToolsForDoer()}
+
+HOW TO CALL A TOOL:
+Reply with a JSON block on its own line, then a short human-readable summary. Example:
+
+{"tool": "search_movies", "args": {"q": "Inception"}}
+
+I will run the tool, then hand you the result. You then summarize it in 1-2 short sentences.
+
+If NO tool matches the user's request, reply normally with a suggestion (or say "No tool for that yet.").
+Never invent tool names. Only use tools from the list above.
 
 RESPONSE FORMAT:
 When the user requests an action, respond with:
@@ -276,6 +290,101 @@ function classifyIntent(message: string, history: HistoryMsg[]): Intent {
 }
 
 // ─── MAIN CHAT HANDLER ─────────────────────────────────────────────────────
+
+// ─── DOER EXECUTION LOOP ──────────────────────────────────────────────────
+// When Doer (the LLM) emits a JSON tool call, we:
+//   1. Parse the tool name + args
+//   2. Run the real endpoint via runDoerTool
+//   3. Feed the result back to Doer for a human summary
+//   4. Return { reply, cards, tool_result }
+
+interface DoerToolCall {
+  tool: string;
+  args: Record<string, any>;
+}
+
+function extractDoerToolCall(text: string): DoerToolCall | null {
+  // Look for the first JSON object containing a "tool" key
+  const matches = text.match(/\{[^{}]*"tool"\s*:\s*"[^"]+"[^{}]*\}/g);
+  if (!matches || matches.length === 0) return null;
+  for (const m of matches) {
+    try {
+      const parsed = JSON.parse(m);
+      if (parsed && typeof parsed.tool === "string") {
+        return { tool: parsed.tool, args: parsed.args || {} };
+      }
+    } catch {
+      // try next match
+    }
+  }
+  return null;
+}
+
+function stripDoerToolCall(text: string): string {
+  return text.replace(/\{[^{}]*"tool"\s*:\s*"[^"]+"[^{}]*\}/g, "").trim();
+}
+
+async function executeDoerLoop(
+  firstReply: string,
+  messages: { role: "system" | "user" | "assistant"; content: string }[],
+  systemPrompt: string
+): Promise<{ reply: string; cards: any[]; toolResult: any }> {
+  const call = extractDoerToolCall(firstReply);
+  if (!call) {
+    // No tool call — Doer just wants to talk. Return as-is.
+    return { reply: firstReply, cards: [], toolResult: null };
+  }
+
+  if (!isKnownTool(call.tool)) {
+    return {
+      reply: `${stripDoerToolCall(firstReply)}\n\nI don't have a tool called "${call.tool}" — but I can still describe what you need.`,
+      cards: [],
+      toolResult: null,
+    };
+  }
+
+  // Execute the real tool
+  console.log(`[Doer] Executing tool: ${call.tool}`, JSON.stringify(call.args));
+  const result = await runDoerTool(call.tool, call.args);
+
+  // Build a card describing the action (frontend renders as "Run" button or shows result)
+  const toolDef = DOER_TOOLS[call.tool];
+  const card: any = {
+    type: toolDef.kind === "action" ? "action" : "read",
+    tool: call.tool,
+    endpoint: result.endpoint,
+    method: result.method,
+    args: call.args,
+    ok: result.ok,
+    status: result.status,
+    // For read tools, embed the result inline so the frontend can show it immediately
+    ...(toolDef.kind === "read" ? { result: result.data } : {}),
+  };
+
+  // Feed result back to Doer for a human summary
+  const summaryPrompt = `You called the tool "${call.tool}" with args ${JSON.stringify(call.args)}.
+The API returned (status ${result.status}):
+${JSON.stringify(result.data).slice(0, 1500)}
+
+Now summarize this for the user in 1-3 short sentences. Do NOT include the raw JSON. Do NOT mention "the API returned". Just speak naturally about what you found.`;
+
+  let summary = "";
+  try {
+    summary = await cfChat([
+      { role: "system", content: systemPrompt },
+      { role: "user", content: summaryPrompt },
+    ], undefined, 300);
+  } catch {
+    summary = stripDoerToolCall(firstReply) || "Done. Check the card above for the result.";
+  }
+
+  return {
+    reply: summary.trim(),
+    cards: [card],
+    toolResult: result.data,
+  };
+}
+
 async function handleChat(
   message: string,
   uid: string,
@@ -362,11 +471,19 @@ async function handleChat(
   }
 
   // 5. Strip any accidental JSON the LLM might output
-  const finalReply = rawReply.replace(/\{"tool"\s*:[^}]*\}/g, "").trim() || rawReply;
+  let finalReply = rawReply.replace(/\{"tool"\s*:[^}]*\}/g, "").trim() || rawReply;
+  let finalCards = cards;
 
-  console.log(`[Hinatu] intent: endpoints=${intent.needs_endpoints} hosting=${intent.needs_hosting}, cards=${cards.length}`);
+  // 6. DOER LOOP — if this is the Doer model, check for tool calls
+  if (modelId === "doer") {
+    const doerResult = await executeDoerLoop(rawReply, messages, systemPrompt);
+    finalReply = doerResult.reply;
+    finalCards = [...cards, ...doerResult.cards];
+  }
 
-  return { reply: finalReply, cards, usedModel };
+  console.log(`[${modelId}] cards=${finalCards.length}`);
+
+  return { reply: finalReply, cards: finalCards, usedModel };
 }
 
 // ─── REGISTER ROUTES ───────────────────────────────────────────────────────
