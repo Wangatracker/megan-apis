@@ -579,7 +579,7 @@ export function registerMeganAIRoutes(app: Express): void {
         askOverchat: askOverchat,
         askMeganAI: askMeganAI,
         askGeminiLite: askGeminiLite,
-      });
+      }, modelId);
 
       // ── Save AI message ──
       try {
