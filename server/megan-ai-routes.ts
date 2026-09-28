@@ -303,24 +303,66 @@ interface DoerToolCall {
 }
 
 function extractDoerToolCall(text: string): DoerToolCall | null {
-  // Look for the first JSON object containing a "tool" key
-  const matches = text.match(/\{[^{}]*"tool"\s*:\s*"[^"]+"[^{}]*\}/g);
-  if (!matches || matches.length === 0) return null;
-  for (const m of matches) {
+  // Balanced-brace scanner — handles nested objects like {"tool":"x","args":{"q":"y"}}
+  const candidates: string[] = [];
+  let depth = 0;
+  let start = -1;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0 && start >= 0) {
+        candidates.push(text.slice(start, i + 1));
+        start = -1;
+      }
+    }
+  }
+  for (const cand of candidates) {
     try {
-      const parsed = JSON.parse(m);
+      const parsed = JSON.parse(cand);
       if (parsed && typeof parsed.tool === "string") {
-        return { tool: parsed.tool, args: parsed.args || {} };
+        return { tool: parsed.tool, args: parsed.args || parsed.params || {} };
       }
     } catch {
-      // try next match
+      // try next candidate
     }
   }
   return null;
 }
 
 function stripDoerToolCall(text: string): string {
-  return text.replace(/\{[^{}]*"tool"\s*:\s*"[^"]+"[^{}]*\}/g, "").trim();
+  // Strip any balanced JSON block containing a "tool" key
+  let out = "";
+  let depth = 0;
+  let start = -1;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0 && start >= 0) {
+        const block = text.slice(start, i + 1);
+        try {
+          const parsed = JSON.parse(block);
+          if (parsed && typeof parsed.tool === "string") {
+            // Skip this block
+            start = -1;
+            continue;
+          }
+        } catch {}
+        out += block;
+        start = -1;
+      }
+    } else if (depth === 0) {
+      out += ch;
+    }
+  }
+  return out.trim();
 }
 
 async function executeDoerLoop(
