@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import axios from "axios";
 import { d1Query, d1Execute } from "./d1-client";
 import { allEndpoints, apiCategories, ApiEndpoint } from "../shared/schema";
-import { cfChat, cfTTS, cfSTT, cfAiConfigured } from "./cf-ai";
+import { cfChat, cfTTS, cfSTT, cfAiConfigured, groqChat, groqSTT, groqConfigured, fallbackTTS } from "./cf-ai";
 import { runDoerTool, formatToolsForDoer, isKnownTool, DOER_TOOLS } from "./doer-tools";
 import {
   searchHosting,
@@ -209,22 +209,41 @@ PERSONALITY:
 - Zero emojis unless the user uses them first.
 
 YOUR ROLE:
-- The user asks for an ACTION (download, search, generate, fetch) → you EXECUTE it using the tools below.
-- You DO NOT chat. You plan and execute.
-- If a tool exists for the task, use it. If not, tell the user what's missing.
+You are an ACTION AGENT. When the user requests something, you MUST call a tool. You do not explain — you execute.
 
 TOOLS YOU CAN CALL:
 ${formatToolsForDoer()}
 
-HOW TO CALL A TOOL:
-Reply with a JSON block on its own line, then a short human-readable summary. Example:
+MANDATORY RESPONSE FORMAT:
+Your reply MUST start with a single JSON block on its own line, followed by nothing else:
 
-{"tool": "search_movies", "args": {"q": "Inception"}}
+{"tool": "tool_name", "args": {"param": "value"}}
 
-I will run the tool, then hand you the result. You then summarize it in 1-2 short sentences.
+EXAMPLES:
 
-If NO tool matches the user's request, reply normally with a suggestion (or say "No tool for that yet.").
-Never invent tool names. Only use tools from the list above.
+User: "find movies called Inception"
+You: {"tool": "search_movies", "args": {"q": "Inception"}}
+
+User: "translate hello to swahili"
+You: {"tool": "translate_text", "args": {"text": "hello", "target": "sw"}}
+
+User: "download this song https://youtube.com/watch?v=abc"
+You: {"tool": "download_mp3", "args": {"url": "https://youtube.com/watch?v=abc"}}
+
+User: "generate an image of a cat"
+You: {"tool": "generate_image", "args": {"prompt": "a cat"}}
+
+User: "what's the weather in Nairobi"
+You: {"tool": "get_weather", "args": {"city": "Nairobi"}}
+
+User: "hi"
+You: {"tool": "none", "reply": "Switch to Hinatu for chat. Give me a task."}
+
+RULES:
+1. Output ONLY the JSON block. No prose before or after.
+2. Use only tools from the list above. Never invent names.
+3. If the user is chatting casually (greeting, thanks, etc), use {"tool": "none", "reply": "..."}.
+4. If no tool matches, use {"tool": "none", "reply": "No tool for that yet."}.
 
 RESPONSE FORMAT:
 When the user requests an action, respond with:
@@ -347,42 +366,36 @@ async function executeDoerLoop(
   console.log(`[Doer] Executing tool: ${call.tool}`, JSON.stringify(call.args));
   const result = await runDoerTool(call.tool, call.args);
 
-  // Build a card describing the action (frontend renders as "Run" button or shows result)
   const toolDef = DOER_TOOLS[call.tool];
   const card: any = {
-    type: toolDef.kind === "action" ? "action" : "read",
     tool: call.tool,
     endpoint: result.endpoint,
     method: result.method,
     args: call.args,
     ok: result.ok,
     status: result.status,
-    // For read tools, embed the result inline so the frontend can show it immediately
-    ...(toolDef.kind === "read" ? { result: result.data } : {}),
+    ...result.card, // spread the typed card (type, items, url, etc)
   };
 
   // Feed result back to Doer for a human summary
   const summaryPrompt = `You called the tool "${call.tool}" with args ${JSON.stringify(call.args)}.
 The API returned (status ${result.status}):
-${JSON.stringify(result.data).slice(0, 1500)}
+${JSON.stringify(result.card).slice(0, 1500)}
 
-Now summarize this for the user in 1-3 short sentences. Do NOT include the raw JSON. Do NOT mention "the API returned". Just speak naturally about what you found.`;
+Now summarize this in 1-2 short sentences. Do NOT include raw JSON. Do NOT say "the API returned". Speak naturally.`;
 
   let summary = "";
   try {
+    // Doer prefers Groq — but the caller already picked a model, so we reuse cfChat which cascades
     summary = await cfChat([
       { role: "system", content: systemPrompt },
       { role: "user", content: summaryPrompt },
     ], undefined, 300);
   } catch {
-    summary = stripDoerToolCall(firstReply) || "Done. Check the card above for the result.";
+    summary = stripDoerToolCall(firstReply) || "Done.";
   }
 
-  return {
-    reply: summary.trim(),
-    cards: [card],
-    toolResult: result.data,
-  };
+  return { reply: summary.trim(), cards: [card], toolResult: result.card };
 }
 
 async function handleChat(
@@ -676,7 +689,13 @@ export function registerMeganAIRoutes(app: Express): void {
       if (!text) return res.status(400).json({ success: false, error: "text required" });
       if (text.length > 2000) return res.status(400).json({ success: false, error: "text too long" });
       if (!cfAiConfigured()) return res.status(503).json({ success: false, error: "TTS not configured" });
-      const mp3 = await cfTTS(text, voice);
+      let mp3: Buffer;
+      try {
+        mp3 = await cfTTS(text, voice);
+      } catch (cfErr: any) {
+        console.log(`[TTS] Cloudflare failed: ${cfErr.message} — trying fallbacks`);
+        mp3 = await fallbackTTS(text);
+      }
       res.setHeader("Content-Type", "audio/mpeg");
       res.setHeader("Cache-Control", "public, max-age=3600");
       return res.send(mp3);
@@ -692,7 +711,17 @@ export function registerMeganAIRoutes(app: Express): void {
       if (!audio) return res.status(400).json({ success: false, error: "audio (base64) required" });
       if (audio.length > 15_000_000) return res.status(413).json({ success: false, error: "audio too large" });
       if (!cfAiConfigured()) return res.status(503).json({ success: false, error: "STT not configured" });
-      const text = await cfSTT(audio);
+      let text: string;
+      try {
+        text = await cfSTT(audio);
+      } catch (cfErr: any) {
+        console.log(`[STT] Cloudflare failed: ${cfErr.message} — trying Groq`);
+        if (groqConfigured()) {
+          text = await groqSTT(audio);
+        } else {
+          throw new Error("STT fallback unavailable");
+        }
+      }
       return res.json({ success: true, text });
     } catch (e: any) {
       return res.status(500).json({ success: false, error: e.message });

@@ -249,3 +249,82 @@ export async function cfSTT(audioBase64: string): Promise<string> {
   }
   throw new Error(`STT failed: ${lastError}`);
 }
+
+
+// ─── GROQ FALLBACK ─────────────────────────────────────────────────────
+const GROQ_KEY = process.env.GROQ_API_KEY || "";
+const GROQ_BASE = "https://api.groq.com/openai/v1";
+
+export function groqConfigured(): boolean {
+  return !!GROQ_KEY;
+}
+
+export async function groqChat(
+  messages: ChatMessage[],
+  model: string = "openai/gpt-oss-120b",
+  maxTokens: number = 1500
+): Promise<string> {
+  if (!groqConfigured()) throw new Error("Groq not configured");
+  const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${GROQ_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature: 0.6 }),
+    signal: AbortSignal.timeout(30000),
+  });
+  const data: any = await res.json();
+  if (data.error) throw new Error(data.error.message || "Groq error");
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error("Empty Groq response");
+  return content.trim();
+}
+
+export async function groqSTT(audioBase64: string): Promise<string> {
+  if (!groqConfigured()) throw new Error("Groq not configured");
+  // Groq expects multipart/form-data with a real file. We wrap base64 in a Blob.
+  const buf = Buffer.from(audioBase64, "base64");
+  const blob = new Blob([buf], { type: "audio/mpeg" });
+  const form = new FormData();
+  form.append("file", blob, "audio.mp3");
+  form.append("model", "whisper-large-v3-turbo");
+
+  const res = await fetch(`${GROQ_BASE}/audio/transcriptions`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${GROQ_KEY}` },
+    body: form,
+    signal: AbortSignal.timeout(30000),
+  });
+  const data: any = await res.json();
+  if (data.error) throw new Error(data.error.message || "Groq STT error");
+  return data.text || "";
+}
+
+// ─── TTS FALLBACKS (StreamElements + Google) ───────────────────────────
+export async function fallbackTTS(text: string): Promise<Buffer> {
+  // Try StreamElements first (Amazon Polly behind the scenes)
+  try {
+    const url = `https://api.streamelements.com/kappa/v2/speech?voice=Brian&text=${encodeURIComponent(text.slice(0, 500))}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    if (res.ok) {
+      const arr = await res.arrayBuffer();
+      if (arr.byteLength > 1000) return Buffer.from(arr);
+    }
+  } catch {}
+
+  // Fall back to Google Translate TTS
+  try {
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text.slice(0, 200))}&tl=en&client=tw-ob`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (res.ok) {
+      const arr = await res.arrayBuffer();
+      if (arr.byteLength > 500) return Buffer.from(arr);
+    }
+  } catch {}
+
+  throw new Error("All TTS fallbacks failed");
+}
