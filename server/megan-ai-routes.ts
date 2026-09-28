@@ -376,9 +376,15 @@ async function executeDoerLoop(
     return { reply: firstReply, cards: [], toolResult: null };
   }
 
+  // Special case: {"tool": "none", "reply": "..."} means Doer wants to chat
+  if (call.tool === "none") {
+    const replyText = (call as any).reply || (call.args as any)?.reply || stripDoerToolCall(firstReply) || "Switch to Hinatu for chat, or give me a task.";
+    return { reply: replyText, cards: [], toolResult: null };
+  }
+
   if (!isKnownTool(call.tool)) {
     return {
-      reply: `${stripDoerToolCall(firstReply)}\n\nI don't have a tool called "${call.tool}" — but I can still describe what you need.`,
+      reply: `${stripDoerToolCall(firstReply)}\n\nI don't have a tool called "${call.tool}" — try rephrasing or use Oracle.`,
       cards: [],
       toolResult: null,
     };
@@ -408,16 +414,22 @@ Now summarize this in 1-2 short sentences. Do NOT include raw JSON. Do NOT say "
 
   let summary = "";
   try {
-    // Doer prefers Groq — but the caller already picked a model, so we reuse cfChat which cascades
+    // Ask the LLM for a human summary. We do NOT reuse the Doer system prompt
+    // because it forces JSON tool output — instead use a clean summarizer prompt.
+    const summarizeSystem = `You summarize API results in 1-2 short sentences for the user. Speak naturally. Never include JSON. Never say "the API returned". Just describe what was found.`;
     summary = await cfChat([
-      { role: "system", content: systemPrompt },
+      { role: "system", content: summarizeSystem },
       { role: "user", content: summaryPrompt },
     ], undefined, 300);
   } catch {
-    summary = stripDoerToolCall(firstReply) || "Done.";
+    summary = "Done.";
   }
 
-  return { reply: summary.trim(), cards: [card], toolResult: result.card };
+  // Strip any accidental JSON block that leaked through
+  const cleanedSummary = summary.replace(/\{[^{}]*"tool"[^{}]*\}/g, "").trim();
+  summary = cleanedSummary || "Done. Check the card below for details.";
+
+  return { reply: summary, cards: [card], toolResult: result.card };
 }
 
 async function handleChat(
@@ -428,8 +440,10 @@ async function handleChat(
   fallbacks: { askOverchat: Function; askMeganAI: Function; askGeminiLite: Function },
   modelId: string = "hinatu"
 ): Promise<{ reply: string; cards: any[]; usedModel: string }> {
-  // 1. Classify intent
-  const intent = classifyIntent(message, history);
+  // 1. Classify intent (skipped for Doer — Doer picks its own tools)
+  const intent = modelId === "doer"
+    ? { needs_endpoints: false, needs_hosting: false }
+    : classifyIntent(message, history);
 
   // 2. Run tools BEFORE the LLM
   let toolContext = "";
