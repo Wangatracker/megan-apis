@@ -613,8 +613,8 @@ export function registerMeganAIRoutes(app: Express): void {
         const title = message.length > 60 ? message.slice(0, 57) + "..." : message;
         try {
           await d1Execute(
-            "INSERT INTO ai_chat_sessions (id, user_id, title, message_count, created_at, updated_at) VALUES (?, ?, ?, 0, datetime('now'), datetime('now'))",
-            [finalSessionId, uid === "anon" ? null : uid, title]
+            "INSERT INTO ai_chat_sessions (id, user_id, title, model, message_count, created_at, updated_at) VALUES (?, ?, ?, ?, 0, datetime('now'), datetime('now'))",
+            [finalSessionId, uid === "anon" ? null : uid, title, modelId]
           );
         } catch (e: any) { console.error("session create failed", e.message); }
       }
@@ -668,10 +668,16 @@ export function registerMeganAIRoutes(app: Express): void {
     try {
       const uid = (req.query.uid as string) || "";
       if (!uid) return res.status(400).json({ success: false, error: "uid required" });
-      const sessions = await d1Query(
-        "SELECT id, title, message_count, created_at, updated_at FROM ai_chat_sessions WHERE user_id = ? ORDER BY updated_at DESC LIMIT 30",
-        [uid]
-      );
+      const modelFilter = (req.query.model as string) || "";
+      const sessions = modelFilter
+        ? await d1Query(
+            "SELECT id, title, model, message_count, created_at, updated_at FROM ai_chat_sessions WHERE user_id = ? AND model = ? ORDER BY updated_at DESC LIMIT 30",
+            [uid, modelFilter]
+          )
+        : await d1Query(
+            "SELECT id, title, model, message_count, created_at, updated_at FROM ai_chat_sessions WHERE user_id = ? ORDER BY updated_at DESC LIMIT 30",
+            [uid]
+          );
       return res.json({ success: true, count: sessions.length, sessions });
     } catch (e: any) {
       return res.status(500).json({ success: false, error: e.message });
