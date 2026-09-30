@@ -33,6 +33,7 @@ function arr(x: any): any[] {
   if (Array.isArray(x?.items)) return x.items;
   if (Array.isArray(x?.tracks)) return x.tracks;
   if (Array.isArray(x?.events)) return x.events;
+  if (Array.isArray(x?.articles)) return x.articles;
   if (Array.isArray(x?.data)) return x.data;
   return [];
 }
@@ -475,17 +476,28 @@ export const DOER_TOOLS: Record<string, ToolDef> = {
     build: (a) => ({ query: {} }),
     classify: (raw) => {
       const data = d(raw);
-      const rawItems = arr(data);
-      const items = rawItems.map((n: any) => ({
-        title: n.title,
-        snippet: n.snippet || n.description || "",
-        url: n.url || n.link,
-        thumbnail: n.image || n.thumbnail,
-        timestamp: n.timestamp || n.time || n.date,
-      }));
+      // Tuko returns { source, count, articles: [{ title, url, image }] }
+      const rawItems = Array.isArray(data?.articles) ? data.articles : arr(data);
+      // Dedupe by URL (Tuko sometimes returns the same headline multiple times)
+      const seen = new Set<string>();
+      const items = rawItems
+        .filter((n: any) => {
+          const u = n.url || n.link;
+          if (!u || seen.has(u)) return false;
+          seen.add(u);
+          return true;
+        })
+        .map((n: any) => ({
+          title: n.title,
+          snippet: n.snippet || n.description || "",
+          url: n.url || n.link,
+          thumbnail: n.image || n.thumbnail,
+          source: data?.source || "Tuko.co.ke",
+        }));
       return {
         type: "news_list",
-        source: "Tuko.co.ke",
+        source: data?.source || "Tuko.co.ke",
+        total: data?.count,
         items,
       };
     },
