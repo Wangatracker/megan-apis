@@ -226,9 +226,25 @@ export const DOER_TOOLS: Record<string, ToolDef> = {
     build: (a) => ({ query: { url: a.url } }),
     classify: (raw) => {
       const data = d(raw);
-      const url = data.downloadUrl || data.videoUrl || data.url;
-      if (!url) return { type: "error", message: "Instagram download failed." };
-      return { type: "media", kind: "video", title: data.title || "Instagram video", url, thumbnail: data.thumbnail, format: "mp4" };
+      // Instagram endpoint returns: { provider, title, username, media: [{ url, quality, type }] }
+      const mediaArr = Array.isArray(data.media) ? data.media : [];
+      const firstVideo = mediaArr.find((m: any) => m.url && (m.type === "video" || !m.type)) || mediaArr[0];
+      const url =
+        data.downloadUrl ||
+        data.videoUrl ||
+        data.url ||
+        firstVideo?.url;
+      if (!url) {
+        return { type: "error", message: "Instagram download failed — no video URL returned. Try again in a moment." };
+      }
+      return {
+        type: "media",
+        kind: "video",
+        title: data.title || "Instagram video",
+        url,
+        thumbnail: data.thumbnail || data.thumbnailUrl,
+        format: "mp4",
+      };
     },
   },
 
@@ -452,17 +468,25 @@ export const DOER_TOOLS: Record<string, ToolDef> = {
   // ─── DATA ──────────────────────────────────────────────────────────
   get_news: {
     kind: "read",
-    description: "Get news articles by keyword.",
-    params: { q: "string" },
-    endpoint: "/api/search/news",
+    description: "Get the latest Kenyan news (Tuko.co.ke). Real, fresh headlines from today. If user asks for news about a specific topic, pass it as q — but Tuko is Kenya-focused, so q works best for topic filtering within Kenya news.",
+    params: { q: "string (optional — topic filter, e.g. 'politics', 'sports')" },
+    endpoint: "/api/news/tuko",
     method: "GET",
-    build: (a) => ({ query: { q: a.q || a.query } }),
+    build: (a) => ({ query: {} }),
     classify: (raw) => {
       const data = d(raw);
+      const rawItems = arr(data);
+      const items = rawItems.map((n: any) => ({
+        title: n.title,
+        snippet: n.snippet || n.description || "",
+        url: n.url || n.link,
+        thumbnail: n.image || n.thumbnail,
+        timestamp: n.timestamp || n.time || n.date,
+      }));
       return {
         type: "news_list",
-        source: data.source,
-        items: arr(data).map((n: any) => ({ title: n.title, snippet: n.snippet, timestamp: n.timestamp })),
+        source: "Tuko.co.ke",
+        items,
       };
     },
   },
