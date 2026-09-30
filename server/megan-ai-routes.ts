@@ -308,6 +308,7 @@ function classifyIntent(message: string, history: HistoryMsg[]): Intent {
 interface DoerToolCall {
   tool: string;
   args: Record<string, any>;
+  reply?: string;   // top-level reply for {"tool": "none", "reply": "..."}
 }
 
 function extractDoerToolCall(text: string): DoerToolCall | null {
@@ -332,7 +333,11 @@ function extractDoerToolCall(text: string): DoerToolCall | null {
     try {
       const parsed = JSON.parse(cand);
       if (parsed && typeof parsed.tool === "string") {
-        return { tool: parsed.tool, args: parsed.args || parsed.params || {} };
+        return {
+          tool: parsed.tool,
+          args: parsed.args || parsed.params || {},
+          reply: typeof parsed.reply === "string" ? parsed.reply : undefined,
+        };
       }
     } catch {
       // try next candidate
@@ -386,7 +391,11 @@ async function executeDoerLoop(
 
   // Special case: {"tool": "none", "reply": "..."} means Doer wants to chat
   if (call.tool === "none") {
-    const replyText = (call as any).reply || (call.args as any)?.reply || stripDoerToolCall(firstReply) || "Switch to Hinatu for chat, or give me a task.";
+    const replyText =
+      call.reply ||
+      (call.args as any)?.reply ||
+      stripDoerToolCall(firstReply) ||
+      "Hey. What do you need?";
     return { reply: replyText, cards: [], toolResult: null };
   }
 
