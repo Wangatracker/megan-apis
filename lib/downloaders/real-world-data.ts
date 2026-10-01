@@ -5,48 +5,143 @@ const cryptoFallback: Record<string, any> = {};
 const cryptoCache = new Map<string, { data: any; expires: number }>();
 const CRYPTO_TTL_MS = 60_000;
 
+// Symbol maps for providers that use ticker codes instead of coin names
+const BINANCE_SYMBOLS: Record<string, string> = {
+  bitcoin: "BTCUSDT", ethereum: "ETHUSDT", binancecoin: "BNBUSDT", bnb: "BNBUSDT",
+  ripple: "XRPUSDT", xrp: "XRPUSDT", cardano: "ADAUSDT", ada: "ADAUSDT",
+  solana: "SOLUSDT", sol: "SOLUSDT", dogecoin: "DOGEUSDT", doge: "DOGEUSDT",
+  polkadot: "DOTUSDT", dot: "DOTUSDT", matic: "MATICUSDT", polygon: "MATICUSDT",
+  litecoin: "LTCUSDT", ltc: "LTCUSDT", tron: "TRXUSDT", trx: "TRXUSDT",
+  shiba: "SHIBUSDT", shib: "SHIBUSDT", avalanche: "AVAXUSDT", avax: "AVAXUSDT",
+  chainlink: "LINKUSDT", link: "LINKUSDT", atom: "ATOMUSDT", cosmos: "ATOMUSDT",
+  uniswap: "UNIUSDT", uni: "UNIUSDT", stellar: "XLMUSDT", xlm: "XLMUSDT",
+  near: "NEARUSDT", aptos: "APTUSDT", apt: "APTUSDT", arbitrum: "ARBUSDT",
+  optimism: "OPUSDT", op: "OPUSDT", "internet-computer": "ICPUSDT", icp: "ICPUSDT",
+};
+
+const KRAKEN_SYMBOLS: Record<string, string> = {
+  bitcoin: "XBTUSD", ethereum: "ETHUSD", ripple: "XRPUSD", xrp: "XRPUSD",
+  cardano: "ADAUSD", ada: "ADAUSD", solana: "SOLUSD", sol: "SOLUSD",
+  dogecoin: "XDGUSD", doge: "XDGUSD", polkadot: "DOTUSD", dot: "DOTUSD",
+  litecoin: "LTCUSD", ltc: "LTCUSD", chainlink: "LINKUSD", link: "LINKUSD",
+  stellar: "XLMUSD", xlm: "XLMUSD", uniswap: "UNIUSD", uni: "UNIUSD",
+};
+
+const KES_RATE_FALLBACK = 129;
+
+const cryptoCache = new Map<string, { data: any; expires: number }>();
+const CRYPTO_TTL_MS = 60_000;
+
 export async function getCryptoPrice(coin: string) {
-  const key = coin.toLowerCase();
+  const key = coin.toLowerCase().trim();
   const cached = cryptoCache.get(key);
   if (cached && cached.expires > Date.now()) return cached.data;
 
-  // Provider 1: CoinGecko
-  try {
-    const res = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${key}&vs_currencies=usd,kes&include_24hr_change=true`, {
-      headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" }, timeout: 8000,
-    });
-    const data = res.data[key];
-    if (data) {
-      const result = { coin: key, price_usd: data.usd, price_kes: data.kes, change_24h_percent: data.usd_24h_change?.toFixed(2) || null, source: "coingecko" };
-      cryptoCache.set(key, { data: result, expires: Date.now() + CRYPTO_TTL_MS });
-      return result;
-    }
-  } catch {}
+  const errors: string[] = [];
 
-  // Provider 2: CoinCap
-  try {
-    const res = await axios.get(`https://api.coincap.io/v2/assets/${key}`, { timeout: 8000 });
-    const dd = res.data.data;
-    if (dd) {
-      const result = { coin: key, price_usd: parseFloat(dd.priceUsd).toFixed(2), price_kes: (parseFloat(dd.priceUsd) * 130).toFixed(2), change_24h_percent: parseFloat(dd.changePercent24Hr).toFixed(2), source: "coincap" };
-      cryptoCache.set(key, { data: result, expires: Date.now() + CRYPTO_TTL_MS });
-      return result;
-    }
-  } catch {}
+  // ── Provider 1: Binance (uses ticker symbols, very reliable) ──
+  const binanceSymbol = BINANCE_SYMBOLS[key];
+  if (binanceSymbol) {
+    try {
+      const res = await axios.get(
+        `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`,
+        { timeout: 6000 }
+      );
+      if (res.data?.lastPrice) {
+        const usd = parseFloat(res.data.lastPrice);
+        const result = {
+          coin: key,
+          symbol: binanceSymbol.replace("USDT", ""),
+          price_usd: usd.toFixed(2),
+          price_kes: (usd * KES_RATE_FALLBACK).toFixed(2),
+          change_24h_percent: parseFloat(res.data.priceChangePercent).toFixed(2),
+          source: "binance",
+          updatedAt: new Date().toISOString(),
+        };
+        cryptoCache.set(key, { data: result, expires: Date.now() + CRYPTO_TTL_MS });
+        return result;
+      }
+    } catch (e: any) { errors.push(`binance: ${e.message}`); }
+  }
 
-  // Provider 3: Binance (very reliable, no key needed)
-  try {
-    const symbol = `${key.toUpperCase()}USDT`;
-    const res = await axios.get(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`, { timeout: 8000 });
-    if (res.data && res.data.lastPrice) {
-      const result = { coin: key, price_usd: parseFloat(res.data.lastPrice).toFixed(2), price_kes: (parseFloat(res.data.lastPrice) * 130).toFixed(2), change_24h_percent: parseFloat(res.data.priceChangePercent).toFixed(2), source: "binance" };
-      cryptoCache.set(key, { data: result, expires: Date.now() + CRYPTO_TTL_MS });
-      return result;
-    }
-  } catch {}
+  // ── Provider 2: Kraken ──
+  const krakenSymbol = KRAKEN_SYMBOLS[key];
+  if (krakenSymbol) {
+    try {
+      const res = await axios.get(
+        `https://api.kraken.com/0/public/Ticker?pair=${krakenSymbol}`,
+        { timeout: 6000 }
+      );
+      const result = res.data?.result;
+      const firstKey = result ? Object.keys(result)[0] : null;
+      if (firstKey && result[firstKey]?.c?.[0]) {
+        const usd = parseFloat(result[firstKey].c[0]);
+        const out = {
+          coin: key,
+          symbol: krakenSymbol.replace("USD", ""),
+          price_usd: usd.toFixed(2),
+          price_kes: (usd * KES_RATE_FALLBACK).toFixed(2),
+          change_24h_percent: null,
+          source: "kraken",
+          updatedAt: new Date().toISOString(),
+        };
+        cryptoCache.set(key, { data: out, expires: Date.now() + CRYPTO_TTL_MS });
+        return out;
+      }
+    } catch (e: any) { errors.push(`kraken: ${e.message}`); }
+  }
 
+  // ── Provider 3: CoinGecko (has KES if works, but often rate-limited) ──
+  try {
+    const res = await axios.get(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${key}&vs_currencies=usd,kes&include_24hr_change=true`,
+      { timeout: 6000, headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" } }
+    );
+    const data = res.data?.[key];
+    if (data?.usd) {
+      const out = {
+        coin: key,
+        price_usd: data.usd.toString(),
+        price_kes: data.kes?.toString() || (data.usd * KES_RATE_FALLBACK).toFixed(2),
+        change_24h_percent: data.usd_24h_change?.toFixed(2) || null,
+        source: "coingecko",
+        updatedAt: new Date().toISOString(),
+      };
+      cryptoCache.set(key, { data: out, expires: Date.now() + CRYPTO_TTL_MS });
+      return out;
+    }
+  } catch (e: any) { errors.push(`coingecko: ${e.message}`); }
+
+  // ── Provider 4: Blockchain.info (BTC only, always works) ──
+  if (key === "bitcoin" || key === "btc") {
+    try {
+      const res = await axios.get("https://blockchain.info/ticker", { timeout: 6000 });
+      const usd = res.data?.USD?.last;
+      if (usd) {
+        const out = {
+          coin: "bitcoin",
+          symbol: "BTC",
+          price_usd: usd.toFixed(2),
+          price_kes: (usd * KES_RATE_FALLBACK).toFixed(2),
+          change_24h_percent: null,
+          source: "blockchain.info",
+          updatedAt: new Date().toISOString(),
+        };
+        cryptoCache.set(key, { data: out, expires: Date.now() + CRYPTO_TTL_MS });
+        return out;
+      }
+    } catch (e: any) { errors.push(`blockchain.info: ${e.message}`); }
+  }
+
+  // ── Final fallback: stale cache ──
   if (cached) return cached.data;
-  throw new Error(`Could not fetch price for "${coin}" from any provider`);
+
+  // ── Absolute last resort: helpful error ──
+  throw new Error(
+    `Could not fetch price for "${coin}". ` +
+    `Tried Binance, Kraken, CoinGecko${key === "bitcoin" ? ", Blockchain.info" : ""}. ` +
+    `Check the coin name (e.g. bitcoin, ethereum, solana).`
+  );
 }
 
 export async function getGlobalNews() {
