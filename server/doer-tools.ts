@@ -2,6 +2,8 @@
 // 60 whitelisted tools. Each calls a real Megan endpoint via HTTP,
 // classifies the response into a typed card for the frontend.
 
+import { registerExtraTools } from "./doer-tools-extra";
+
 const SELF_BASE = process.env.SELF_BASE_URL || "https://apis.megan.qzz.io";
 const ADMIN_KEY = process.env.ADMIN_KEY || "megan_admin_master";
 
@@ -650,3 +652,8 @@ export function isKnownTool(name: string): boolean {
 export function listToolNames(): string[] {
   return Object.keys(DOER_TOOLS);
 }
+
+
+// ─── Register extended tools (stalker, security, research, etc.) ────
+const EXTRA_COUNT = registerExtraTools(DOER_TOOLS);
+console.log(`[Doer] Registered ${EXTRA_COUNT} extra tools (total: ${Object.keys(DOER_TOOLS).length})`);
