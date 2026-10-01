@@ -200,22 +200,29 @@ export const DOER_TOOLS: Record<string, ToolDef> = {
   },
   download_tiktok: {
     kind: "action",
-    description: "Download a TikTok video without watermark. May fail if TikTok blocks the API.",
-    params: { url: "string (TikTok video URL)" },
+    description: "Download a TikTok video without watermark. IMPORTANT: TikTok download only works with SHORT URLs (vm.tiktok.com/XXXXX). If user provides a full URL with /video/12345, ask them to share the short link instead.",
+    params: { url: "string (TikTok SHORT URL — must contain vm.tiktok.com or /t/)" },
     endpoint: "/api/download/tiktok",
     method: "GET",
     build: (a) => ({ query: { url: a.url } }),
     classify: (raw) => {
       const data = d(raw);
-      if (!data || !data.downloadUrl) {
-        return { type: "error", message: "TikTok download failed or video unavailable." };
+      // Endpoint returns: title, videoUrl, videoUrlNoWatermark, videoProxyUrl, videoNoWatermarkProxyUrl
+      const url = data.videoNoWatermarkProxyUrl || data.videoUrlNoWatermark || data.videoProxyUrl || data.videoUrl || data.downloadUrl;
+      if (!url) {
+        return {
+          type: "error",
+          message: data.title
+            ? `TikTok returned metadata but no video URL. The provider may be down. Try again in a moment.`
+            : "TikTok download failed. Make sure you're using a SHORT TikTok URL (vm.tiktok.com/... or /t/...).",
+        };
       }
       return {
         type: "media",
         kind: "video",
         title: data.title || "TikTok video",
-        url: data.downloadUrl || data.videoUrl,
-        thumbnail: data.thumbnail,
+        url,
+        thumbnail: data.thumbnail || data.cover,
         format: "mp4",
       };
     },
@@ -402,14 +409,24 @@ export const DOER_TOOLS: Record<string, ToolDef> = {
   // ─── UTILITY ───────────────────────────────────────────────────────
   translate_text: {
     kind: "read",
-    description: "Translate text between languages.",
-    params: { text: "string", target: "string (lang code)", source: "string (optional)" },
+    description: "Translate text between languages (Google Translate). Lang codes: en, sw, fr, es, de, ar, zh, ja, hi, pt, ru, etc.",
+    params: { text: "string", target: "string (target lang code)", source: "string (optional, default auto)" },
     endpoint: "/api/v2/tools/translate",
     method: "GET",
     build: (a) => ({ query: { text: a.text, target: a.target || a.to || "en", source: a.source || "auto" } }),
     classify: (raw) => {
       const data = d(raw);
-      return { type: "text", result: data.translatedText, provider: data.provider };
+      if (data.status === false || data.error) {
+        return {
+          type: "error",
+          message: "Translation service is rate-limited right now. Try again in a minute.",
+        };
+      }
+      return {
+        type: "text",
+        title: `${data.provider || "Translation"}`,
+        result: data.translatedText || data.result || "",
+      };
     },
   },
   shorten_url: {
