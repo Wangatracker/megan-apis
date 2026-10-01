@@ -23,7 +23,7 @@ export const EXTRA_TOOLS: Record<string, any> = {
   // ═══════════════════ STALKER (7) ═══════════════════
   stalk_github: {
     kind: "read",
-    description: "Get GitHub user profile (followers, repos, bio, avatar).",
+    description: "Get GitHub user profile (followers, repos, bio, avatar, location, company, links).",
     params: { username: "string" },
     endpoint: "/api/stalk/github",
     method: "GET",
@@ -31,7 +31,25 @@ export const EXTRA_TOOLS: Record<string, any> = {
     classify: (raw: any) => {
       const data = d_extra(raw);
       const u = data.result || data;
-      return { type: "profile", platform: "GitHub", name: u.name || u.login, username: u.login, avatar: u.avatar_url, bio: u.bio, followers: u.followers, following: u.following, repos: u.public_repos, url: u.html_url };
+      return {
+        type: "profile",
+        platform: "GitHub",
+        username: u.username || u.login,
+        name: u.name,
+        avatar: u.avatar,
+        bio: u.bio,
+        followers: u.followers,
+        following: u.following,
+        repos: u.publicRepos || u.public_repos,
+        gists: u.publicGists || u.public_gists,
+        company: u.company,
+        location: u.location,
+        blog: u.blog,
+        twitter: u.twitterUsername || u.twitter_username,
+        createdAt: u.createdAt || u.created_at,
+        url: u.profileUrl || u.html_url,
+        profileUrl: u.profileUrl || u.html_url,
+      };
     },
   },
   stalk_tiktok: {
