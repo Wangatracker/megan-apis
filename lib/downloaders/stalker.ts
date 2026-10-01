@@ -1,4 +1,6 @@
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
 const CREATOR = "Megan APIs v3.6.4 | Tracker Wanga | Megan Tech";
 
 async function fetchJSON(url: string, headers: Record<string, string> = {}): Promise<any> {
@@ -9,8 +11,14 @@ async function fetchJSON(url: string, headers: Record<string, string> = {}): Pro
       headers: { "User-Agent": USER_AGENT, ...headers },
       signal: controller.signal,
     });
-    if (!res.ok) return null;
-    return await res.json();
+    // Always try to parse the body — even on non-OK — so callers can see GitHub's error messages
+    let body: any = null;
+    try { body = await res.json(); } catch { body = null; }
+    if (!res.ok) {
+      // Return body so callers see the real error (e.g. "API rate limit exceeded")
+      return body || null;
+    }
+    return body;
   } catch {
     return null;
   } finally {
@@ -36,9 +44,26 @@ async function fetchHTML(url: string, headers: Record<string, string> = {}): Pro
 }
 
 export async function githubStalk(username: string) {
-  const data = await fetchJSON(`https://api.github.com/users/${encodeURIComponent(username)}`);
-  if (!data || (data.message && data.message !== "Not Found")) {
-    return { success: false, creator: CREATOR, error: data?.message || `GitHub user "${username}" not found` };
+  const headers: Record<string, string> = {
+    "Accept": "application/vnd.github.v3+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+  if (GITHUB_TOKEN) headers["Authorization"] = `Bearer ${GITHUB_TOKEN}`;
+
+  const data = await fetchJSON(`https://api.github.com/users/${encodeURIComponent(username)}`, headers);
+
+  // Handle GitHub API errors explicitly
+  if (!data) {
+    return { success: false, creator: CREATOR, error: `GitHub user "${username}" not found` };
+  }
+  if (data.message === "Not Found") {
+    return { success: false, creator: CREATOR, error: `GitHub user "${username}" does not exist` };
+  }
+  if (data.message && data.message.toLowerCase().includes("rate limit")) {
+    return { success: false, creator: CREATOR, error: "GitHub API rate limit reached. Try again in a minute." };
+  }
+  if (data.message) {
+    return { success: false, creator: CREATOR, error: data.message };
   }
   return {
     success: true,
