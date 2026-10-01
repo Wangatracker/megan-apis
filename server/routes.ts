@@ -1627,7 +1627,62 @@ export async function registerRoutes(
 
   // ─── SEARCH ────────────────────────────────────────────────────────────────
   app.get("/api/search/wiki", async (req, res) => { try { const q = req.query.q as string; if (!q) return res.status(400).json({ success: false, creator: creatorTag, error: "Missing 'q'" }); const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(q)}`); if (!wikiRes.ok) { const searchRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json&srlimit=5`); const searchData = await searchRes.json() as any; const results = searchData.query?.search || []; return res.json({ success: true, creator: creatorTag, results: results.map((r: any) => ({ title: r.title, snippet: r.snippet?.replace(/<[^>]*>/g, ""), wordcount: r.wordcount, pageId: r.pageid })) }); } const data = await wikiRes.json() as any; return res.json({ success: true, creator: creatorTag, result: { title: data.title, extract: data.extract, description: data.description, thumbnail: data.thumbnail?.source, url: data.content_urls?.desktop?.page } }); } catch (e: any) { return res.status(500).json({ success: false, creator: creatorTag, error: e.message }); } });
-  app.get("/api/search/news", async (req, res) => { try { const q = req.query.q as string; if (!q) return res.status(400).json({ success: false, creator: creatorTag, error: "Missing 'q'" }); const lang = (req.query.lang as string) || "en"; const newsRes = await fetch(`https://gnews.io/api/v4/search?q=${encodeURIComponent(q)}&lang=${lang}&max=10&apikey=free`, { headers: { "User-Agent": "Mozilla/5.0" } }); if (newsRes.ok) { const data = await newsRes.json() as any; if (data.articles) return res.json({ success: true, creator: creatorTag, total: data.totalArticles, articles: data.articles.map((a: any) => ({ title: a.title, description: a.description, url: a.url, image: a.image, source: a.source?.name, publishedAt: a.publishedAt })) }); } const wikiNewsRes = await fetch(`https://en.wikinews.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json&srlimit=10`); const wikiData = await wikiNewsRes.json() as any; return res.json({ success: true, creator: creatorTag, source: "WikiNews", results: (wikiData.query?.search || []).map((r: any) => ({ title: r.title, snippet: r.snippet?.replace(/<[^>]*>/g, ""), timestamp: r.timestamp })) }); } catch (e: any) { return res.status(500).json({ success: false, creator: creatorTag, error: e.message }); } });
+  app.get("/api/search/news", async (req, res) => {
+    try {
+      const q = req.query.q as string;
+      if (!q) return res.status(400).json({ success: false, creator: creatorTag, error: "Missing 'q'" });
+
+      // Aggregate RSS from multiple sources and filter by query
+      const feeds = [
+        { source: "BBC", url: "https://feeds.bbci.co.uk/news/rss.xml" },
+        { source: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml" },
+        { source: "Al Jazeera", url: "https://www.aljazeera.com/xml/rss/all.xml" },
+        { source: "Nation Africa", url: "https://nation.africa/kenya/rss" },
+        { source: "Standard Media", url: "https://www.standardmedia.co.ke/rss/headlines.php" },
+      ];
+      const needle = q.toLowerCase();
+      const results: any[] = [];
+      for (const feed of feeds) {
+        try {
+          const res2 = await fetch(feed.url, { headers: { "User-Agent": "Mozilla/5.0" } });
+          if (!res2.ok) continue;
+          const xml = await res2.text();
+          const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+          for (const item of items) {
+            const block = item[1];
+            const title = (block.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) || block.match(/<title>([\s\S]*?)<\/title>/))?.[1]?.trim();
+            const link = (block.match(/<link>([\s\S]*?)<\/link>/))?.[1]?.trim();
+            const pubDate = (block.match(/<pubDate>([\s\S]*?)<\/pubDate>/))?.[1]?.trim();
+            const desc = (block.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/) || block.match(/<description>([\s\S]*?)<\/description>/))?.[1]?.trim();
+            if (!title) continue;
+            const haystack = `${title} ${desc || ""}`.toLowerCase();
+            if (haystack.includes(needle)) {
+              results.push({ title, url: link, snippet: (desc || "").replace(/<[^>]*>/g, "").slice(0, 200), timestamp: pubDate, source: feed.source });
+            }
+          }
+        } catch {}
+        if (results.length >= 10) break;
+      }
+      // If no keyword match, return the first feed's general headlines as a courtesy
+      if (results.length === 0) {
+        try {
+          const fallbackRes = await fetch("https://feeds.bbci.co.uk/news/rss.xml", { headers: { "User-Agent": "Mozilla/5.0" } });
+          const xml = await fallbackRes.text();
+          const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 10);
+          for (const item of items) {
+            const block = item[1];
+            const title = (block.match(/<title>([\s\S]*?)<\/title>/))?.[1]?.trim();
+            const link = (block.match(/<link>([\s\S]*?)<\/link>/))?.[1]?.trim();
+            const pubDate = (block.match(/<pubDate>([\s\S]*?)<\/pubDate>/))?.[1]?.trim();
+            if (title) results.push({ title, url: link, snippet: "", timestamp: pubDate, source: "BBC" });
+          }
+        } catch {}
+      }
+      return res.json({ success: true, creator: creatorTag, source: "RSS Aggregator", query: q, total: results.length, results });
+    } catch (e: any) {
+      return res.status(500).json({ success: false, creator: creatorTag, error: e.message });
+    }
+  });
   app.get("/api/search/github", async (req, res) => { try { const q = req.query.q as string; if (!q) return res.status(400).json({ success: false, creator: creatorTag, error: "Missing 'q'" }); const ghRes = await fetch(`https://api.github.com/search/repositories?q=${encodeURIComponent(q)}&per_page=10&sort=stars`, { headers: { "User-Agent": "MeganAPIs/1.0", Accept: "application/vnd.github.v3+json" } }); if (!ghRes.ok) throw new Error("GitHub API request failed"); const data = await ghRes.json() as any; return res.json({ success: true, creator: creatorTag, total: data.total_count, repos: (data.items || []).map((r: any) => ({ name: r.full_name, description: r.description, stars: r.stargazers_count, forks: r.forks_count, language: r.language, url: r.html_url, topics: r.topics?.slice(0, 5) })) }); } catch (e: any) { return res.status(500).json({ success: false, creator: creatorTag, error: e.message }); } });
   app.get("/api/search/npm", async (req, res) => { try { const q = req.query.q as string; if (!q) return res.status(400).json({ success: false, creator: creatorTag, error: "Missing 'q'" }); const npmRes = await fetch(`https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(q)}&size=10`); if (!npmRes.ok) throw new Error("NPM API request failed"); const data = await npmRes.json() as any; return res.json({ success: true, creator: creatorTag, total: data.total, packages: (data.objects || []).map((o: any) => ({ name: o.package.name, version: o.package.version, description: o.package.description, keywords: o.package.keywords?.slice(0, 5), url: o.package.links?.npm, downloads: o.score?.detail?.popularity })) }); } catch (e: any) { return res.status(500).json({ success: false, creator: creatorTag, error: e.message }); } });
   app.get("/api/search/pypi", async (req, res) => { try { const q = req.query.q as string; if (!q) return res.status(400).json({ success: false, creator: creatorTag, error: "Missing 'q'" }); const pypiRes = await fetch(`https://pypi.org/pypi/${encodeURIComponent(q)}/json`); if (pypiRes.ok) { const data = await pypiRes.json() as any; return res.json({ success: true, creator: creatorTag, result: { name: data.info.name, version: data.info.version, summary: data.info.summary, author: data.info.author, license: data.info.license, url: data.info.project_url, homepage: data.info.home_page } }); } throw new Error(`Package "${q}" not found on PyPI`); } catch (e: any) { return res.status(500).json({ success: false, creator: creatorTag, error: e.message }); } });
