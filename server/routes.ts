@@ -85,6 +85,7 @@ import { listAudioEffects, applyAudioEffect } from "../lib/downloaders/audio-eff
 import { getSettings, saveSettings, loadSettings } from "./admin-settings";
 import { registerApiKeyRoutes } from "./api-keys";
 import { trackIpRequest, getSecurityStats, heavyLimiter, adminLimiter, loginLimiter } from "./security";
+import { registerSportsRoutes } from "./sports-routes";
 
 // ─── Activity Tracking ────────────────────────────────────────────────────────
 
@@ -1901,5 +1902,6 @@ app.get("/api/scrape/scripts", async (req, res) => { try { const url = req.query
 app.get("/api/scrape/cookies", async (req, res) => { try { const url = req.query.url as string; if (!url) return res.status(400).json({ error: "Missing url" }); const result = await getCookies(url); return res.json({ success: true, creator: "Megan APIs v3.6.4 | Tracker Wanga | Megan Tech", result }); } catch (e: any) { return res.status(500).json({ error: e.message }); } });
   registerSocialRoutes(app);
   registerMediaRoutes(app);
+  registerSportsRoutes(app);
   return httpServer;
 }
