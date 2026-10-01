@@ -29,8 +29,6 @@ const KRAKEN_SYMBOLS: Record<string, string> = {
 
 const KES_RATE_FALLBACK = 129;
 
-const cryptoCache = new Map<string, { data: any; expires: number }>();
-const CRYPTO_TTL_MS = 60_000;
 
 export async function getCryptoPrice(coin: string) {
   const key = coin.toLowerCase().trim();
