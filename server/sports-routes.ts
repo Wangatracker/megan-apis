@@ -169,6 +169,7 @@ export function registerSportsRoutes(app: Express): void {
   // ═══════════════════════════════════════════════════════════════════
   // BASE — quick overview
   // ═══════════════════════════════════════════════════════════════════
+  app.get("/api/sports", (req, res) => send(req, res, "/api/v2/status", 10_000));
   app.get("/api/sports/v2", (req, res) => send(req, res, "/api/v2/status", 10_000));
 
   console.log("✅ Megan Sports Routes Registered (40 endpoints):");
