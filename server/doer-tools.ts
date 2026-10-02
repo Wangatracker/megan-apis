@@ -3,6 +3,7 @@
 // classifies the response into a typed card for the frontend.
 
 import { registerExtraTools } from "./doer-tools-extra";
+import { registerSportsTools } from "./doer-tools-sports";
 
 const SELF_BASE = process.env.SELF_BASE_URL || "https://apis.megan.qzz.io";
 const ADMIN_KEY = process.env.ADMIN_KEY || "megan_admin_master";
@@ -674,3 +675,6 @@ export function listToolNames(): string[] {
 // ─── Register extended tools (stalker, security, research, etc.) ────
 const EXTRA_COUNT = registerExtraTools(DOER_TOOLS);
 console.log(`[Doer] Registered ${EXTRA_COUNT} extra tools (total: ${Object.keys(DOER_TOOLS).length})`);
+
+const SPORTS_COUNT = registerSportsTools(DOER_TOOLS);
+console.log(`[Doer] Registered ${SPORTS_COUNT} sports tools (total: ${Object.keys(DOER_TOOLS).length})`);
