@@ -170,6 +170,36 @@ export const SPORTS_TOOLS: Record<string, any> = {
     },
   },
 
+  get_live_streams: {
+    kind: "read",
+    description: "Get all live matches that have streams available right now. Use this when the user asks 'can I stream any match' or 'what can I watch'. Returns empty array if no streams available.",
+    params: {},
+    endpoint: "/api/sports/v2/matches/live",
+    method: "GET",
+    build: () => ({ query: {} }),
+    classify: (raw: any) => {
+      const data = d(raw);
+      const allMatches = data?.matches || [];
+      const streamable = allMatches.filter((m: any) => m.hasStreams);
+      return {
+        type: "stream_list",
+        count: streamable.length,
+        totalLive: allMatches.length,
+        hasStreams: streamable.length > 0,
+        streams: streamable.map((m: any) => ({
+          matchId: m.id,
+          matchTitle: m.title,
+          league: m.league,
+          minute: m.currentMinute,
+          note: "Call get_match_streams with this match ID to get the actual stream URL",
+        })),
+        message: streamable.length === 0
+          ? `No streams available. ${allMatches.length} live matches exist but none have streamable feeds right now (usually minor leagues).`
+          : `${streamable.length} of ${allMatches.length} live matches have streams.`,
+      };
+    },
+  },
+
   // ═══════════════ STREAMS & HIGHLIGHTS (4) ═══════════════
   get_match_streams: {
     kind: "read",
