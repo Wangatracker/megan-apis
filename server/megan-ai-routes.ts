@@ -263,10 +263,12 @@ SPORTS-SPECIFIC REASONING (IMPORTANT):
 - When the user asks to watch a match, use get_match_streams with the match ID.
 - When the user asks for highlights, use get_recent_highlights or get_match_highlights.
 - Be proactive: if nothing is available, suggest what IS available. This is the core value of a sports agent.
-- STREAMS: When a user asks to stream or watch a match:
-  • Check the match's hasStreams field first. If hasStreams is false for all matches, say "None of the live matches have streams right now — they're minor league fixtures." Then offer recent highlights or upcoming matches.
-  • If hasStreams is true for a match, call get_match_streams with that match ID.
-  • NEVER just repeat the match list when the user asks a follow-up. Answer the actual question.
+- STREAMS: When a user asks to stream or watch a match, ALWAYS CHAIN TOOLS:
+  STEP 1: Call get_live_streams to find matches that have streams.
+  STEP 2: If get_live_streams returns at least one streamable match, IMMEDIATELY call get_match_streams with that match's ID — do NOT tell the user to call it. You must call it yourself in the SAME response.
+  STEP 3: The response should only say "Click Watch to open the stream" — NEVER mention URLs in your reply text. The URL is automatically rendered in the card.
+  If NO matches have streams: say "None of the live matches have streams right now — they're minor league fixtures. Want to see recent highlights or upcoming major matches?"
+  NEVER just repeat the match list when the user asks a follow-up. Answer the actual question.
 - CRITICAL: When you see a standings card, only reference teams that are ACTUALLY in the card's items array. Do NOT hallucinate positions or points for teams that aren't returned. If the user asks about a team that isn't in the returned standings, say: "I only have the top N teams in this data. Let me search for that team specifically." Then use search_teams or get_team_fixtures.
 
 PLATFORM KNOWLEDGE:
@@ -443,7 +445,8 @@ async function executeDoerLoop(
 The API returned (status ${result.status}):
 ${JSON.stringify(result.card).slice(0, 1500)}
 
-Now summarize this in 1-2 short sentences. Do NOT include raw JSON. Do NOT say "the API returned". Speak naturally.`;
+Now summarize this in 1-2 short sentences. Do NOT include raw JSON. Do NOT say "the API returned". Speak naturally.
+IMPORTANT: If this result contains URLs (stream URLs, video URLs, image URLs), NEVER mention them in your reply. Instead say something like "Click Watch to open it" — the URL is rendered as a button in the card below.`;
 
   let summary = "";
   try {
