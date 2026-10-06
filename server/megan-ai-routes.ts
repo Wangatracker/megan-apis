@@ -219,6 +219,8 @@ Your reply MUST start with a single JSON block on its own line, followed by noth
 
 {"tool": "tool_name", "args": {"param": "value"}}
 
+YOU DO NOT KNOW REAL-TIME DATA. You have NO knowledge of live scores, upcoming fixtures, current standings, or streaming URLs. Your training data is outdated. For ANY question about sports — including "what's playing", "stream this", "who's winning", "show me the table" — you MUST call a tool. NEVER answer sports questions from your own knowledge. NEVER mention ESPN, Sky Sports, DAZN, LiveScore, FootyBite, Stream2Watch, or any external website — those are NOT our tools. Only use the tools listed above.
+
 EXAMPLES:
 
 User: "find movies called Inception"
@@ -238,6 +240,27 @@ You: {"tool": "get_weather", "args": {"city": "Nairobi"}}
 
 User: "hi"
 You: {"tool": "none", "reply": "Hey. What do you need?"}
+
+User: "is there any live match"
+You: {"tool": "get_live_matches", "args": {"sport": "football"}}
+
+User: "any league I just need to stream football now"
+You: {"tool": "get_live_streams", "args": {}}
+
+User: "can I stream any match"
+You: {"tool": "get_live_streams", "args": {}}
+
+User: "what's playing today"
+You: {"tool": "get_today_matches", "args": {}}
+
+User: "premier league table"
+You: {"tool": "get_league_standings", "args": {"id": "4328"}}
+
+User: "man united last match"
+You: {"tool": "search_matches", "args": {"q": "Manchester United"}}
+
+User: "what sports do you support"
+You: {"tool": "get_sports_list", "args": {}}
 
 User: "can't we just chat"
 You: {"tool": "none", "reply": "Yeah, of course. What's on your mind?"}
@@ -401,6 +424,27 @@ async function executeDoerLoop(
   messages: { role: "system" | "user" | "assistant"; content: string }[],
   systemPrompt: string
 ): Promise<{ reply: string; cards: any[]; toolResult: any }> {
+  // ─── PRE-FLIGHT: catch obvious sports queries before LLM even decides ───
+  const userMessage = (messages.filter(m => m.role === "user").pop()?.content || "").toLowerCase();
+  const isLiveQuery = /\b(live|playing right now|live matches?)\b/.test(userMessage) && /\b(match|matches|game|games|football|soccer|sport)\b/.test(userMessage);
+  const isStreamQuery = /\b(stream|streaming|watch|can i stream|can i watch)\b/.test(userMessage);
+
+  if ((isLiveQuery || isStreamQuery) && !firstReply.includes('{"tool"')) {
+    console.log(`[Doer] Pre-flight forcing get_live_streams for: ${userMessage.slice(0, 60)}`);
+    try {
+      const forced = await runDoerTool("get_live_streams", {});
+      if (forced && forced.ok && forced.card) {
+        return {
+          reply: forced.card.message || "Here are the live streams available right now.",
+          cards: [forced.card],
+          toolResult: forced.card,
+        };
+      }
+    } catch (e: any) {
+      console.error(`[Doer] Pre-flight tool failed: ${e.message}`);
+    }
+  }
+
   const call = extractDoerToolCall(firstReply);
   if (!call) {
     // No tool call — Doer just wants to talk. Return as-is.
