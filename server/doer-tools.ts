@@ -15,6 +15,7 @@ export interface TypedCard {
 }
 
 interface ToolDef {
+  baseUrl?: string; // optional cross-worker base URL (e.g. auth.megan.qzz.io)
   kind: "read" | "action";
   description: string;
   params: Record<string, string>;
@@ -43,6 +44,67 @@ function arr(x: any): any[] {
 
 // ─── TOOL REGISTRY ──────────────────────────────────────────────────────
 export const DOER_TOOLS: Record<string, ToolDef> = {
+  // ─── PREMIUM / REFERRAL / GIVEAWAY (cross-worker → megan-auth) ─────
+  get_premium_status: {
+    kind: "read",
+    description: "Check the current user's premium status (trial/subscription, days left, referral code, referral count).",
+    params: { uid: "string (user uid)" },
+    endpoint: "/api/user/me",
+    method: "GET",
+    baseUrl: "https://auth.megan.qzz.io",
+    build: (a) => ({ query: { uid: a.uid || a.user || "" } }),
+    classify: (raw) => {
+      const d = raw?.data || raw;
+      return {
+        type: "premium_status",
+        premium_active: !!d.premium_active,
+        days_left: d.days_left ?? 0,
+        trial_ends_at: d.trial_ends_at ?? null,
+        subscription_ends_at: d.subscription_ends_at ?? null,
+        referral_code: d.referral_code ?? null,
+        referral_count: d.referral_count ?? 0,
+      };
+    },
+  },
+
+  apply_referral: {
+    kind: "action",
+    description: "Apply a friend's referral code to get +7 days premium. Each user can only use one code, once.",
+    params: { uid: "string (user uid)", code: "string (referral code, e.g. MEGAN-XYZ4)" },
+    endpoint: "/api/user/referral/apply",
+    method: "POST",
+    baseUrl: "https://auth.megan.qzz.io",
+    build: (a) => ({ query: {} }),
+    classify: (raw) => {
+      const d = raw?.data || raw;
+      return {
+        type: "referral_applied",
+        success: !!d.success,
+        days_awarded: d.days_awarded ?? 7,
+        error: d.error ?? null,
+      };
+    },
+  },
+
+  redeem_giveaway: {
+    kind: "action",
+    description: "Redeem a giveaway code to extend premium. Codes are first-come-first-served and single-use.",
+    params: { uid: "string (user uid)", code: "string (giveaway code, e.g. MEGAN-ABCD-EFGH-IJKL)" },
+    endpoint: "/api/user/redeem",
+    method: "POST",
+    baseUrl: "https://auth.megan.qzz.io",
+    build: (a) => ({ query: {} }),
+    classify: (raw) => {
+      const d = raw?.data || raw;
+      return {
+        type: "giveaway_redeemed",
+        success: !!d.success,
+        days: d.days ?? 7,
+        error: d.error ?? null,
+      };
+    },
+  },
+
   // ─── MUSIC ─────────────────────────────────────────────────────────
   search_songs: {
     kind: "read",
@@ -637,7 +699,8 @@ export async function runDoerTool(
   }
 
   const qs = new URLSearchParams({ ...query, api_key: ADMIN_KEY }).toString();
-  const url = `${SELF_BASE}${path}?${qs}`;
+  const base = (tool as any).baseUrl || SELF_BASE;
+  const url = `${base}${path}?${qs}`;
 
   try {
     const res = await fetch(url, {

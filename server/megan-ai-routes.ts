@@ -241,6 +241,18 @@ You: {"tool": "get_weather", "args": {"city": "Nairobi"}}
 User: "hi"
 You: {"tool": "none", "reply": "Hey. What do you need?"}
 
+User: "apply referral code MEGAN-XYZ4"
+You: {"tool": "apply_referral", "args": {"uid": "self", "code": "MEGAN-XYZ4"}}
+
+User: "redeem giveaway MEGAN-ABCD-EFGH-IJKL"
+You: {"tool": "redeem_giveaway", "args": {"uid": "self", "code": "MEGAN-ABCD-EFGH-IJKL"}}
+
+User: "what's my premium status"
+You: {"tool": "get_premium_status", "args": {"uid": "self"}}
+
+User: "how many days of premium do I have left"
+You: {"tool": "get_premium_status", "args": {"uid": "self"}}
+
 User: "is there any live match"
 You: {"tool": "get_live_matches", "args": {"sport": "football"}}
 
@@ -668,7 +680,40 @@ export function registerMeganAIRoutes(app: Express): void {
   // ─── MAIN CHAT ──────────────────────────────────────────────────────────
   app.post("/api/v2/megan-ai/chat", async (req: Request, res: Response) => {
     const message = (req.body?.message || "").trim();
-    const modelRequested = (req.body?.model || "hinatu").toLowerCase();
+
+    // ─── PREMIUM GATE ──────────────────────────────────────────────────
+    // Every Doer/Hinatu/Oracle chat requires an active trial or subscription.
+    // Free users get a friendly upgrade message instead.
+    const gateUid = (req.body?.uid as string) || (req.query.uid as string) || null;
+    if (gateUid && gateUid !== "anon") {
+      try {
+        const authBase = process.env.AUTH_DOMAIN
+          ? `https://${process.env.AUTH_DOMAIN}`
+          : "https://auth.megan.qzz.io";
+        const premiumRes = await fetch(`${authBase}/api/user/me?uid=${encodeURIComponent(gateUid)}`);
+        if (premiumRes.ok) {
+          const prem: any = await premiumRes.json();
+          const isPremium = prem?.premium_active === true;
+          if (!isPremium) {
+            return res.status(402).json({
+              success: false,
+              error: "premium_required",
+              message: "This AI assistant is a premium feature. Start your 7-day free trial or redeem a code to continue.",
+              upgrade_url: `${authBase}/upgrade`,
+              redeem_hint: "Use POST /api/user/redeem with a giveaway code.",
+            });
+          }
+        }
+      } catch (e: any) {
+        console.log(`[premium-gate] check failed: ${e.message} — allowing through (fail-open)`);
+        // Fail-open: if auth is down, don't block users.
+      }
+    }
+    // ─── END PREMIUM GATE ──────────────────────────────────────────────
+
+    const messageBody = message;
+
+        const modelRequested = (req.body?.model || "hinatu").toLowerCase();
     const modelId = ["hinatu", "oracle", "doer"].includes(modelRequested) ? modelRequested : "hinatu";
     const incomingConvId = req.body?.conversation_id as string | undefined;
     const uid = (req.body?.uid as string) || (req.query.uid as string) || (req.ip || "anon");
@@ -680,6 +725,9 @@ export function registerMeganAIRoutes(app: Express): void {
     if (!rate.ok) {
       return res.status(429).json({ success: false, error: "Rate limit exceeded. Try again in a minute." });
     }
+
+    // message_id for the assistant reply (set later, used in the JSON response)
+    let newMessageId: number | null = null;
 
     try {
       // ── Session management ──
@@ -723,6 +771,15 @@ export function registerMeganAIRoutes(app: Express): void {
           "INSERT INTO ai_chat_messages (session_id, role, content, endpoints, model_used, created_at) VALUES (?, 'assistant', ?, ?, ?, datetime('now'))",
           [finalSessionId, result.reply, JSON.stringify(result.cards), result.usedModel]
         );
+        // Fetch the row we just inserted so we can return its ID for reactions
+        try {
+          const rows: any = await d1Query(
+            "SELECT id FROM ai_chat_messages WHERE session_id = ? AND role = 'assistant' ORDER BY id DESC LIMIT 1",
+            [finalSessionId]
+          );
+          newMessageId = rows?.[0]?.id ?? null;
+        } catch {}
+        
         await d1Execute(
           "UPDATE ai_chat_sessions SET message_count = message_count + 2, updated_at = datetime('now') WHERE id = ?",
           [finalSessionId]
@@ -735,8 +792,10 @@ export function registerMeganAIRoutes(app: Express): void {
         model: result.usedModel,
         session_id: finalSessionId,
         is_new_session: isNewSession,
+        message_id: typeof newMessageId !== "undefined" ? newMessageId : null,
         reply: result.reply,
         cards: result.cards,
+        reactions: { endpoint: "/api/chat/react", method: "POST", body: { uid: "<your-uid>", messageId: "<message_id>", reaction: "like|dislike" } },
       });
     } catch (e: any) {
       return res.status(500).json({ success: false, error: e.message });
