@@ -684,30 +684,41 @@ export function registerMeganAIRoutes(app: Express): void {
     // ─── PREMIUM GATE ──────────────────────────────────────────────────
     // Every Doer/Hinatu/Oracle chat requires an active trial or subscription.
     // Free users get a friendly upgrade message instead.
-    const gateUid = (req.body?.uid as string) || (req.query.uid as string) || null;
-    if (gateUid && gateUid !== "anon") {
-      try {
-        const authBase = process.env.AUTH_DOMAIN
-          ? `https://${process.env.AUTH_DOMAIN}`
-          : "https://auth.megan.qzz.io";
-        const premiumRes = await fetch(`${authBase}/api/user/me?uid=${encodeURIComponent(gateUid)}`);
-        if (premiumRes.ok) {
-          const prem: any = await premiumRes.json();
-          const isPremium = prem?.premium_active === true;
-          if (!isPremium) {
+    const gateUid = (req.body?.uid as string) || (req.query.uid as string) || "anon";
+    try {
+      const authBase = process.env.AUTH_DOMAIN
+        ? `https://${process.env.AUTH_DOMAIN}`
+        : "https://auth.megan.qzz.io";
+
+      // 1. Check premium status
+      const premiumRes = await fetch(`${authBase}/api/user/me?uid=${encodeURIComponent(gateUid)}`);
+      const prem: any = premiumRes.ok ? await premiumRes.json() : {};
+      const isPremium = prem?.premium_active === true;
+
+      // 2. If not premium, check + increment daily quota
+      if (!isPremium) {
+        const quotaRes = await fetch(
+          `${authBase}/api/billing/quota?uid=${encodeURIComponent(gateUid)}&bump=1`
+        );
+        if (quotaRes.ok) {
+          const q: any = await quotaRes.json();
+          if (typeof q?.remaining === "number" && q.remaining < 0) {
             return res.status(402).json({
               success: false,
-              error: "premium_required",
-              message: "This AI assistant is a premium feature. Start your 7-day free trial or redeem a code to continue.",
-              upgrade_url: `${authBase}/upgrade`,
-              redeem_hint: "Use POST /api/user/redeem with a giveaway code.",
+              error: "daily_limit_reached",
+              message: "You've hit today's free message limit. Redeem a code for unlimited access.",
+              used: q.used,
+              limit: q.limit,
+              remaining: 0,
+              reset_at: q.reset_at,
+              redeem_hint: "Use POST /api/billing/redeem with a giveaway code.",
             });
           }
         }
-      } catch (e: any) {
-        console.log(`[premium-gate] check failed: ${e.message} — allowing through (fail-open)`);
-        // Fail-open: if auth is down, don't block users.
       }
+    } catch (e: any) {
+      console.log(`[gate] check failed: ${e.message} — allowing through (fail-open)`);
+      // Fail-open: if auth is down, don't block users.
     }
     // ─── END PREMIUM GATE ──────────────────────────────────────────────
 
