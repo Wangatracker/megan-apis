@@ -242,16 +242,16 @@ User: "hi"
 You: {"tool": "none", "reply": "Hey. What do you need?"}
 
 User: "apply referral code MEGAN-XYZ4"
-You: {"tool": "apply_referral", "args": {"uid": "self", "code": "MEGAN-XYZ4"}}
+You: {"tool": "apply_referral", "args": {"code": "MEGAN-XYZ4"}}
 
 User: "redeem giveaway MEGAN-ABCD-EFGH-IJKL"
-You: {"tool": "redeem_giveaway", "args": {"uid": "self", "code": "MEGAN-ABCD-EFGH-IJKL"}}
+You: {"tool": "redeem_giveaway", "args": {"code": "MEGAN-ABCD-EFGH-IJKL"}}
 
 User: "what's my premium status"
-You: {"tool": "get_premium_status", "args": {"uid": "self"}}
+You: {"tool": "get_premium_status", "args": {}}
 
 User: "how many days of premium do I have left"
-You: {"tool": "get_premium_status", "args": {"uid": "self"}}
+You: {"tool": "get_premium_status", "args": {}}
 
 User: "is there any live match"
 You: {"tool": "get_live_matches", "args": {"sport": "football"}}
@@ -434,7 +434,8 @@ function stripDoerToolCall(text: string): string {
 async function executeDoerLoop(
   firstReply: string,
   messages: { role: "system" | "user" | "assistant"; content: string }[],
-  systemPrompt: string
+  systemPrompt: string,
+  ctx: { uid?: string } = {}
 ): Promise<{ reply: string; cards: any[]; toolResult: any }> {
   // ─── PRE-FLIGHT: catch obvious sports queries before LLM even decides ───
   const userMessage = (messages.filter(m => m.role === "user").pop()?.content || "").toLowerCase();
@@ -444,7 +445,7 @@ async function executeDoerLoop(
   if ((isLiveQuery || isStreamQuery) && !firstReply.includes('{"tool"')) {
     console.log(`[Doer] Pre-flight forcing get_live_streams for: ${userMessage.slice(0, 60)}`);
     try {
-      const forced = await runDoerTool("get_live_streams", {});
+      const forced = await runDoerTool("get_live_streams", {}, ctx);
       if (forced && forced.ok && forced.card) {
         return {
           reply: forced.card.message || "Here are the live streams available right now.",
@@ -483,7 +484,7 @@ async function executeDoerLoop(
 
   // Execute the real tool
   console.log(`[Doer] Executing tool: ${call.tool}`, JSON.stringify(call.args));
-  const result = await runDoerTool(call.tool, call.args);
+  const result = await runDoerTool(call.tool, call.args, ctx);
 
   const toolDef = DOER_TOOLS[call.tool];
   const card: any = {
@@ -641,7 +642,7 @@ async function handleChat(
 
   // 6. DOER LOOP — if this is the Doer model, check for tool calls
   if (modelId === "doer") {
-    const doerResult = await executeDoerLoop(rawReply, messages, systemPrompt);
+    const doerResult = await executeDoerLoop(rawReply, messages, systemPrompt, { uid });
     finalReply = doerResult.reply;
     finalCards = [...cards, ...doerResult.cards];
   }

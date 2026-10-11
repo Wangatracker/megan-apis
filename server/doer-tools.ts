@@ -21,7 +21,7 @@ interface ToolDef {
   params: Record<string, string>;
   endpoint: string;
   method: "GET" | "POST";
-  build?: (args: any) => { query?: Record<string, string>; body?: any };
+  build?: (args: any, ctx?: { uid?: string }) => { query?: Record<string, string>; body?: any };
   classify: (raw: any) => TypedCard;
 }
 
@@ -48,11 +48,11 @@ export const DOER_TOOLS: Record<string, ToolDef> = {
   get_premium_status: {
     kind: "read",
     description: "Check the current user's premium status (trial/subscription, days left, referral code, referral count).",
-    params: { uid: "string (user uid)" },
+    params: {},
     endpoint: "/api/user/me",
     method: "GET",
     baseUrl: "https://auth.megan.qzz.io",
-    build: (a) => ({ query: { uid: a.uid || a.user || "" } }),
+    build: (_a, ctx) => ({ query: { uid: ctx?.uid || "" } }),
     classify: (raw) => {
       const d = raw?.data || raw;
       return {
@@ -70,11 +70,11 @@ export const DOER_TOOLS: Record<string, ToolDef> = {
   apply_referral: {
     kind: "action",
     description: "Apply a friend's referral code to get +7 days premium. Each user can only use one code, once.",
-    params: { uid: "string (user uid)", code: "string (referral code, e.g. MEGAN-XYZ4)" },
+    params: { code: "string (referral code, e.g. MEGAN-XYZ4)" },
     endpoint: "/api/user/referral/apply",
     method: "POST",
     baseUrl: "https://auth.megan.qzz.io",
-    build: (a) => ({ query: {} }),
+    build: (a, ctx) => ({ query: {}, body: { uid: ctx?.uid || "", code: a.code || "" } }),
     classify: (raw) => {
       const d = raw?.data || raw;
       return {
@@ -89,11 +89,11 @@ export const DOER_TOOLS: Record<string, ToolDef> = {
   redeem_giveaway: {
     kind: "action",
     description: "Redeem a giveaway code to extend premium. Codes are first-come-first-served and single-use.",
-    params: { uid: "string (user uid)", code: "string (giveaway code, e.g. MEGAN-ABCD-EFGH-IJKL)" },
+    params: { code: "string (giveaway code, e.g. MEGAN-ABCD-EFGH-IJKL)" },
     endpoint: "/api/user/redeem",
     method: "POST",
     baseUrl: "https://auth.megan.qzz.io",
-    build: (a) => ({ query: {} }),
+    build: (a, ctx) => ({ query: {}, body: { uid: ctx?.uid || "", code: a.code || "" } }),
     classify: (raw) => {
       const d = raw?.data || raw;
       return {
@@ -672,21 +672,44 @@ export const DOER_TOOLS: Record<string, ToolDef> = {
 };
 
 // ─── EXECUTE ───────────────────────────────────────────────────────────
+export interface ToolContext {
+  uid?: string;
+}
+
 export async function runDoerTool(
   name: string,
-  args: any
+  args: any,
+  ctx: ToolContext = {}
 ): Promise<{ ok: boolean; status: number; card: TypedCard; raw: any; endpoint: string; method: string }> {
   const tool = DOER_TOOLS[name];
   if (!tool) {
     return { ok: false, status: 404, card: { type: "error", message: `Unknown tool: ${name}` }, raw: null, endpoint: name, method: "?" };
   }
 
-  // Substitute :params in the endpoint path
-  let path = tool.endpoint;
-  const built = tool.build ? tool.build(args || {}) : { query: {} };
-  const query = built.query || {};
+  // Account-scoped tools require a real authenticated uid.
+  // Firebase localId is alphanumeric, 20-128 chars — allow-list, not block-list.
+  // Rejects "anon", IPv4 ("1.2.3.4"), IPv6 ("::1"), and empty values.
+  const NEEDS_UID = ["get_premium_status", "apply_referral", "redeem_giveaway"];
+  const REAL_UID = /^[A-Za-z0-9]{20,128}$/;
+  if (NEEDS_UID.includes(name) && !REAL_UID.test(ctx.uid || "")) {
+    return {
+      ok: false,
+      status: 401,
+      card: { type: "error", message: "Please sign in to use this feature." },
+      raw: null,
+      endpoint: name,
+      method: tool.method,
+    };
+  }
 
-  // Handle :id-style params
+  // Build query/body. `ctx` lets tools read the authenticated uid without
+  // trusting the model to supply it.
+  let path = tool.endpoint;
+  const built = tool.build ? tool.build(args || {}, ctx) : { query: {} };
+  const query = built.query || {};
+  const body = built.body;
+
+  // Substitute :params in the endpoint path
   const idMatch = path.match(/:([a-zA-Z_]+)/g);
   if (idMatch) {
     for (const m of idMatch) {
@@ -698,15 +721,33 @@ export async function runDoerTool(
     }
   }
 
-  const qs = new URLSearchParams({ ...query, api_key: ADMIN_KEY }).toString();
   const base = (tool as any).baseUrl || SELF_BASE;
-  const url = `${base}${path}?${qs}`;
+  const isOwnApi = !(tool as any).baseUrl || base === SELF_BASE;
+
+  // Auth strategy:
+  //  - Own API (SELF_BASE): api_key as query param (existing behavior)
+  //  - Cross-worker (e.g. auth.megan.qzz.io): internal secret as header, no key in URL
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-Internal-Source": "doer",
+  };
+  let qs = new URLSearchParams(query).toString();
+  if (isOwnApi) {
+    qs = new URLSearchParams({ ...query, api_key: ADMIN_KEY }).toString();
+  } else {
+    // Cross-worker: send internal secret header (never in URL)
+    const internalSecret = process.env.INTERNAL_SECRET || process.env.ADMIN_SECRET;
+    if (internalSecret) headers["x-internal-secret"] = internalSecret;
+  }
+
+  const url = `${base}${path}${qs ? `?${qs}` : ""}`;
 
   try {
     const res = await fetch(url, {
       method: tool.method,
-      headers: { "Content-Type": "application/json", "X-Internal-Source": "doer" },
-      signal: AbortSignal.timeout(30000),
+      headers,
+      body: tool.method === "POST" && body ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(10000),  // 10s, not 30s
     });
     const raw: any = await res.json().catch(() => ({}));
     const card = tool.classify(raw);
