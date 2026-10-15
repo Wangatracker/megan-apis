@@ -21,6 +21,7 @@ interface ToolDef {
   params: Record<string, string>;
   endpoint: string;
   method: "GET" | "POST";
+  timeoutMs?: number; // per-tool timeout; default 10000
   build?: (args: any, ctx?: { uid?: string }) => { query?: Record<string, string>; body?: any };
   classify: (raw: any) => TypedCard;
 }
@@ -112,6 +113,7 @@ export const DOER_TOOLS: Record<string, ToolDef> = {
     params: { q: "string (song name or artist)" },
     endpoint: "/api/search",
     method: "GET",
+    timeoutMs: 20000,
     build: (a) => ({ query: { q: a.q || a.query } }),
     classify: (raw) => {
       const data = d(raw);
@@ -132,6 +134,7 @@ export const DOER_TOOLS: Record<string, ToolDef> = {
     params: { url: "string (optional)", q: "string (optional)" },
     endpoint: "/download/mp3",
     method: "GET",
+    timeoutMs: 45000,
     build: (a) => ({ query: { url: a.url || "", q: a.q || a.query || "" } }),
     classify: (raw) => {
       const data = d(raw);
@@ -154,6 +157,7 @@ export const DOER_TOOLS: Record<string, ToolDef> = {
     params: { url: "string (optional)", q: "string (optional)" },
     endpoint: "/download/mp4",
     method: "GET",
+    timeoutMs: 45000,
     build: (a) => ({ query: { url: a.url || "", q: a.q || a.query || "" } }),
     classify: (raw) => {
       const data = d(raw);
@@ -328,6 +332,7 @@ export const DOER_TOOLS: Record<string, ToolDef> = {
     params: { q: "string" },
     endpoint: "/api/tmdb/search/movies",
     method: "GET",
+    timeoutMs: 20000,
     build: (a) => ({ query: { q: a.q || a.query } }),
     classify: (raw) => {
       const data = d(raw);
@@ -747,7 +752,7 @@ export async function runDoerTool(
       method: tool.method,
       headers,
       body: tool.method === "POST" && body ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.timeout(10000),  // 10s, not 30s
+      signal: AbortSignal.timeout(tool.timeoutMs ?? 10000),  // 10s, not 30s
     });
     const raw: any = await res.json().catch(() => ({}));
     const card = tool.classify(raw);
