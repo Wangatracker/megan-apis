@@ -4,7 +4,7 @@
   "type": "module",
   "license": "MIT",
   "author": "Tracker Wanga",
-  "description": "Free REST API hub — AI chat, social media downloads, image effects, OSINT tools, and more. Powered by Falcon Tech.",
+  "description": "Free REST API hub \u2014 AI chat, social media downloads, image effects, OSINT tools, and more. Powered by Falcon Tech.",
   "scripts": {
     "dev": "NODE_ENV=development node_modules/.bin/tsx server/index.ts",
     "build": "tsx script/build.ts",
@@ -51,5 +51,14 @@
     "esbuild": "^0.25.12",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "core-js",
+      "esbuild",
+      "youtube-dl-exec",
+      "sharp",
+      "puppeteer"
+    ]
   }
 }
