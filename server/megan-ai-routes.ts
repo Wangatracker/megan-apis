@@ -653,6 +653,106 @@ async function handleChat(
 }
 
 // ─── REGISTER ROUTES ───────────────────────────────────────────────────────
+// ─── STREAMING HELPERS ──────────────────────────────────────────────────────
+// Used only when STREAM_MODE=1 (VPS). Render stays on JSON.
+
+function sseInit(res: Response) {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");  // disable nginx buffering
+  res.flushHeaders();
+}
+
+function sseSend(res: Response, event: any) {
+  try {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+    // @ts-ignore — express types don't expose flush, but it exists
+    if (typeof (res as any).flush === "function") (res as any).flush();
+  } catch (e: any) {
+    console.error("[sse] write failed:", e.message);
+  }
+}
+
+// Full "download a song" flow with live progress events.
+// Emits: status → song_found → status → download_ready → suggestion → done
+async function streamSongDownload(res: Response, query: string, uid: string) {
+  sseSend(res, { type: "status", text: `I'll get ${query} for you.` });
+
+  // 1. Search
+  let searchResult: any = null;
+  try {
+    searchResult = await runDoerTool("search_songs", { q: query }, { uid });
+  } catch (e: any) {
+    sseSend(res, { type: "error", message: `Search failed: ${e.message}` });
+    return sseSend(res, { type: "done" });
+  }
+
+  const items = searchResult?.card?.items || [];
+  if (!searchResult?.ok || items.length === 0) {
+    sseSend(res, {
+      type: "error",
+      message: `I couldn't find "${query}". Try a different spelling or a YouTube link.`,
+    });
+    return sseSend(res, { type: "done" });
+  }
+
+  // 2. Emit top 3 results (thumbnails for UI)
+  const top = items[0];
+  sseSend(res, {
+    type: "song_found",
+    title: top.title,
+    thumbnail: top.thumbnail,
+    youtubeUrl: top.youtubeUrl,
+    id: top.id,
+    candidates: items.slice(0, 3).map((i: any) => ({
+      title: i.title,
+      thumbnail: i.thumbnail,
+      youtubeUrl: i.youtubeUrl,
+      id: i.id,
+    })),
+  });
+
+  // 3. Kick off the mp3 conversion using the resolved URL
+  sseSend(res, { type: "status", text: `Downloading "${top.title}" as MP3…` });
+
+  let mp3Result: any = null;
+  try {
+    mp3Result = await runDoerTool("download_mp3", { url: top.youtubeUrl }, { uid });
+  } catch (e: any) {
+    sseSend(res, { type: "error", message: `Download failed: ${e.message}` });
+    return sseSend(res, { type: "done" });
+  }
+
+  if (!mp3Result?.ok || !mp3Result.card?.url) {
+    sseSend(res, {
+      type: "error",
+      message: mp3Result?.card?.message || "I found it, but the MP3 conversion failed. Try a different song.",
+    });
+    return sseSend(res, { type: "done" });
+  }
+
+  // 4. Emit the ready card
+  sseSend(res, {
+    type: "download_ready",
+    title: mp3Result.card.title || top.title,
+    url: mp3Result.card.url,
+    proxyUrl: mp3Result.card.proxyUrl,
+    thumbnail: mp3Result.card.thumbnail || top.thumbnail,
+    quality: mp3Result.card.quality || "320kbps",
+    format: mp3Result.card.format || "mp3",
+  });
+
+  // 5. Conversational follow-up
+  sseSend(res, {
+    type: "suggestion",
+    text: `Want another one? Just say the name.`,
+  });
+
+  sseSend(res, { type: "done" });
+}
+
+
 export function registerMeganAIRoutes(app: Express): void {
   // Legacy single-turn endpoint (kept for compatibility)
   app.get("/api/v2/megan-ai", async (req: Request, res: Response) => {
@@ -681,6 +781,38 @@ export function registerMeganAIRoutes(app: Express): void {
   // ─── MAIN CHAT ──────────────────────────────────────────────────────────
   app.post("/api/v2/megan-ai/chat", async (req: Request, res: Response) => {
     const message = (req.body?.message || "").trim();
+
+    // ─── SSE STREAMING MODE (VPS only) ──────────────────────────────
+    if (process.env.STREAM_MODE === "1") {
+      const streamUid = (req.body?.uid as string) || (req.query.uid as string) || (req.ip || "anon");
+      const msgLower = message.toLowerCase();
+
+      // Route: song/music download with no URL
+      // Match ANY download request — no need to check for "song" keyword
+      const wantsDownload = /\b(download|get me|grab|save|fetch|mp3|mp4)\b/.test(msgLower);
+      const hasUrl = /https?:\/\//.test(message);
+
+      if (wantsDownload && !hasUrl) {
+        sseInit(res);
+        try {
+          // Extract the song query by stripping download-y words
+          const query = message
+            .replace(/\b(download|get|grab|save|fetch|me|please|the|a|an|song|music|track|mp3|audio|for|of)\b/gi, " ")
+            .replace(/\s+/g, " ")
+            .trim() || message;
+
+          await streamSongDownload(res, query, streamUid);
+        } catch (e: any) {
+          sseSend(res, { type: "error", message: e.message });
+          sseSend(res, { type: "done" });
+        }
+        return res.end();
+      }
+
+      // Fallback: no streaming for non-download messages yet — use normal flow.
+      // (We'll add generic streaming in Patch 2.)
+    }
+    // ─── END SSE BRANCH ──────────────────────────────────────────────
 
     // ─── PREMIUM GATE ──────────────────────────────────────────────────
     // Every Doer/Hinatu/Oracle chat requires an active trial or subscription.
@@ -1048,4 +1180,6 @@ async function askGeminiLite(prompt: string, systemPrompt: string): Promise<stri
   const answer = parts.map((p: any) => p.text).join("");
   if (!answer) throw new Error("Empty");
   return answer;
+
+
 }

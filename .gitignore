@@ -4,3 +4,4 @@ dist/
 *.log
 *.bak
 yt-dlp
+.env
