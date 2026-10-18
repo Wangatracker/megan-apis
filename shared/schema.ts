@@ -1585,17 +1585,33 @@ const movieStreamingEndpoints: ApiEndpoint[] = [
   createEndpoint("/api/v2/moviebox/home", "GET", "Get Moviebox homepage content.", [], "json", "media", "movie-streaming", "v2", "2026-07-01T08:00:00.000Z", "Moviebox", [SC.SUCCESS, SC.SERVER_ERROR], 60),
   createEndpoint("/api/v2/moviebox/trending", "GET", "Get trending movies and shows from Moviebox.", [{ name: "page", type: "number", required: false, description: "Page number (default 0)", default: "0" }], "json", "media", "movie-streaming", "v2", "2026-07-02T09:00:00.000Z", "Moviebox", [SC.SUCCESS, SC.SERVER_ERROR], 60),
   createEndpoint("/api/v2/moviebox/detail", "GET", "Get movie/show details from Moviebox.", [{ name: "detailPath", type: "string", required: true, description: "Movie detail path from search results", default: "" }], "json", "media", "movie-streaming", "v2", "2026-07-02T09:00:00.000Z", "Moviebox", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/v2/moviebox/stream", "GET", "Get streaming URLs (360p-1080p MP4) from Moviebox.", [
-    { name: "subjectId", type: "string", required: true, description: "Movie subject ID", default: "" },
-    { name: "detailPath", type: "string", required: true, description: "Movie detail path", default: "" },
-    { name: "se", type: "number", required: false, description: "Season (0 for movies)", default: "0" },
-    { name: "ep", type: "number", required: false, description: "Episode (0 for movies)", default: "0" }
-  ], "json", "media", "movie-streaming", "v2", "2026-07-03T10:00:00.000Z", "Moviebox", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
+  createEndpoint("/api/v2/moviebox/stream", "GET",
+    "Resolve streaming URLs from Moviebox. Returns 6 quality tiers (1080p MP4, 1080p DASH, 720p, 480p, 360p + native). Each stream includes `required_headers` for zero-bandwidth direct CDN downloads, and `proxy_url` for fallback playback. Filter with ?quality=480p&format=mp4.",
+    [
+      { name: "subjectId", type: "string", required: true, description: "Movie or TV subject ID (from /api/v2/search/moviebox)", default: "8906247916759695608" },
+      { name: "se", type: "number", required: false, description: "Season number (0 for movies)", default: "0" },
+      { name: "ep", type: "number", required: false, description: "Episode number (0 for movies)", default: "0" },
+      { name: "quality", type: "string", required: false, description: "Filter by quality: 1080p, 720p, 480p, 360p, or 'lowest'/'highest' for auto-pick. Leave empty for all qualities.", default: "", options: ["1080p", "720p", "480p", "360p", "lowest", "highest"] },
+      { name: "format", type: "string", required: false, description: "Filter by container format", default: "", options: ["mp4", "dash"] },
+    ],
+    "json", "media", "movie-streaming", "v2", "2026-07-03T10:00:00.000Z", "Moviebox",
+    [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
   createEndpoint("/api/v2/moviebox/ranking", "GET", "Get ranked movie lists (Trending, K-Drama, Anime, etc.) from Moviebox.", [
     { name: "name", type: "string", required: false, description: "Ranking name (TRENDING_NOW, K_DRAMA, ANIME, etc.)", default: "" },
     { name: "page", type: "number", required: false, description: "Page number (default 1)", default: "1" }
   ], "json", "media", "movie-streaming", "v2", "2026-07-03T10:00:00.000Z", "Moviebox", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/v2/moviebox/proxy", "GET", "Proxy Moviebox streaming URLs with proper headers.", [{ name: "url", type: "string", required: true, description: "Media URL to proxy", default: "" }], "stream", "media", "movie-streaming", "v2", "2026-07-05T11:00:00.000Z", "Moviebox", [SC.SUCCESS, SC.BAD_REQUEST, SC.BAD_GATEWAY, SC.TIMEOUT], 30),
+  createEndpoint("/api/v2/moviebox/proxy", "GET",
+    "Stream video bytes from Moviebox CDN with required headers injected server-side. Use this when the client can't set custom headers (e.g. <video> tags). For zero-bandwidth downloads, use the `required_headers` + `url` from /api/v2/moviebox/stream instead.",
+    [
+      { name: "url", type: "string", required: true, description: "CDN video URL (from /api/v2/moviebox/stream)", default: "" },
+      { name: "download", type: "string", required: false, description: "Set to 'true' to force download (adds Content-Disposition)", default: "", options: ["true"] },
+      { name: "sub_id", type: "string", required: false, description: "Subject ID (used for download filename)", default: "" },
+      { name: "se", type: "number", required: false, description: "Season (used for download filename)", default: "0" },
+      { name: "ep", type: "number", required: false, description: "Episode (used for download filename)", default: "0" },
+      { name: "quality", type: "string", required: false, description: "Quality label (used for download filename)", default: "" },
+    ],
+    "stream", "media", "movie-streaming", "v2", "2026-07-05T11:00:00.000Z", "Moviebox",
+    [SC.SUCCESS, SC.BAD_REQUEST, SC.BAD_GATEWAY, SC.TIMEOUT], 30),
 ];
 
 const animeStreamingEndpoints: ApiEndpoint[] = [
