@@ -6,6 +6,7 @@ import axios from "axios";
 // ============================================
 
 const MOVIEBOX_BASE = 'https://h5-api.aoneroom.com';
+const PYTHON_STREAM_API = "https://megan-moviebox-api1.onrender.com";
 const MOVIEBOX_PLAY_DOMAINS = [
   'https://themoviebox.xyz',
   'https://netfilm.world',
@@ -246,32 +247,50 @@ export function registerMovieboxRoutes(app: Express): void {
 
   // Stream (returns both original and proxied URLs)
   app.get('/api/v2/moviebox/stream', async (req: Request, res: Response) => {
-    const { subjectId, detailPath, se, ep } = req.query;
-    if (!subjectId || !detailPath) {
-      return res.status(400).json({ status: false, error: "Parameters 'subjectId' and 'detailPath' required" });
+    const { subjectId, se, ep, quality, format } = req.query;
+    if (!subjectId) {
+      return res.status(400).json({ status: false, error: "Parameter 'subjectId' required" });
     }
+
     try {
-      const result = await moviebox.getStream(
-        subjectId as string,
-        detailPath as string,
-        parseInt(se as string) || 0,
-        parseInt(ep as string) || 0
+      const qs = new URLSearchParams();
+      if (se) qs.set('se', String(se));
+      if (ep) qs.set('ep', String(ep));
+      if (quality) qs.set('quality', String(quality));
+      if (format) qs.set('format', String(format));
+
+      const upstream = await axios.get(
+        `${PYTHON_STREAM_API}/api/stream/${subjectId}?${qs.toString()}`,
+        { timeout: 45000 }
       );
 
-      if (result.data?.streams?.length > 0) {
-        const host = req.headers.host || 'apis.megan.qzz.io';
-        const protocol = req.headers['x-forwarded-proto'] || 'https';
-        const baseUrl = `${protocol}://${host}`;
+      const host = req.headers.host || 'apis.megan.qzz.io';
+      const protocol = (req.headers['x-forwarded-proto'] as string) || 'https';
+      const baseUrl = `${protocol}://${host}`;
 
-        result.data.streams = result.data.streams.map((stream: any) => ({
-          ...stream,
-          proxy_url: `${baseUrl}/api/v2/moviebox/proxy?url=${encodeURIComponent(stream.url)}`,
-        }));
-      }
+      const streams = (upstream.data.streams || []).map((s: any) => ({
+        ...s,
+        proxy_url: `${baseUrl}/api/v2/moviebox/proxy-v3?url=${encodeURIComponent(s.url)}`,
+      }));
 
-      return res.json({ status: true, provider: "Moviebox", result });
+      return res.json({
+        status: true,
+        provider: "Moviebox",
+        source: "python-bridge",
+        subject_id: upstream.data.subject_id,
+        season: upstream.data.season,
+        episode: upstream.data.episode,
+        count: streams.length,
+        available_formats: upstream.data.available_formats || [],
+        streams,
+        note: upstream.data.note,
+      });
     } catch (e: any) {
-      return res.status(500).json({ status: false, error: e.message });
+      return res.status(502).json({
+        status: false,
+        error: e.message,
+        hint: "Python API may be cold-starting. Retry in 30s.",
+      });
     }
   });
 
@@ -296,78 +315,72 @@ export function registerMovieboxRoutes(app: Express): void {
     });
   });
 
-  // Stream Proxy
+  // Stream Proxy — delegates to Python resolver for CDN headers
   app.get('/api/v2/moviebox/proxy', async (req: Request, res: Response) => {
     const url = req.query.url as string;
     if (!url) return res.status(400).json({ status: false, error: "Parameter 'url' required" });
 
-    let targetUrl: URL;
+    const qs = new URLSearchParams({ url });
+    for (const k of ['download', 'sub_id', 'se', 'ep', 'quality']) {
+      if (req.query[k]) qs.set(k, String(req.query[k]));
+    }
+
     try {
-      targetUrl = new URL(url);
-    } catch (e) {
-      return res.status(400).json({ status: false, error: "Invalid URL" });
-    }
+      const upstream = await axios.get(
+        `${PYTHON_STREAM_API}/proxy?${qs.toString()}`,
+        {
+          responseType: 'stream',
+          timeout: 60000,
+          headers: { ...(req.headers.range ? { Range: req.headers.range } : {}) },
+          validateStatus: () => true,
+        }
+      );
 
-    const https = require('https');
-    const http = require('http');
-
-    const headers = {
-      'User-Agent': MOVIEBOX_UA,
-      'Accept': '*/*',
-      'Origin': 'https://themoviebox.xyz',
-      'Referer': 'https://themoviebox.xyz/',
-      'Cookie': `uuid=${STATIC_UUID}`,
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'Connection': 'keep-alive',
-    };
-
-    if (req.headers.range) {
-      headers['Range'] = req.headers.range;
-    }
-
-    const options = {
-      hostname: targetUrl.hostname,
-      path: targetUrl.pathname + targetUrl.search,
-      method: 'GET',
-      headers,
-      timeout: 60000,
-    };
-
-    const protocol = targetUrl.protocol === 'https:' ? https : http;
-
-    const proxyReq = protocol.request(options, (proxyRes: any) => {
-      if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
-        const redirectUrl = new URL(proxyRes.headers.location, targetUrl);
-        return res.redirect(`/api/v2/moviebox/proxy?url=${encodeURIComponent(redirectUrl.toString())}`);
-      }
-
-      res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'video/mp4');
-      if (proxyRes.headers['content-length']) {
-        res.setHeader('Content-Length', proxyRes.headers['content-length']);
-      }
-      res.setHeader('Accept-Ranges', 'bytes');
-      res.setHeader('Cache-Control', 'no-cache');
+      const headersToRelay = ['content-type', 'content-length', 'content-range', 'accept-ranges', 'content-disposition'];
+      headersToRelay.forEach((h) => {
+        const v = upstream.headers[h];
+        if (v) res.setHeader(h, v as string);
+      });
       res.setHeader('Access-Control-Allow-Origin', '*');
+      res.status(upstream.status || 200);
+      upstream.data.pipe(res);
+    } catch (e: any) {
+      if (!res.headersSent) return res.status(502).json({ status: false, error: e.message });
+    }
+  });
 
-      res.writeHead(proxyRes.statusCode || 200);
-      proxyRes.pipe(res);
-    });
+  // proxy-v3 — alias referenced by /stream's proxy_url
+  app.get('/api/v2/moviebox/proxy-v3', async (req: Request, res: Response) => {
+    const url = req.query.url as string;
+    if (!url) return res.status(400).json({ status: false, error: "Parameter 'url' required" });
 
-    proxyReq.on('error', (err: any) => {
-      if (!res.headersSent) {
-        res.status(502).json({ status: false, error: err.message });
-      }
-    });
+    const qs = new URLSearchParams({ url });
+    for (const k of ['download', 'sub_id', 'se', 'ep', 'quality']) {
+      if (req.query[k]) qs.set(k, String(req.query[k]));
+    }
 
-    proxyReq.on('timeout', () => {
-      proxyReq.destroy();
-      if (!res.headersSent) {
-        res.status(504).json({ status: false, error: 'Gateway timeout' });
-      }
-    });
+    try {
+      const upstream = await axios.get(
+        `${PYTHON_STREAM_API}/proxy?${qs.toString()}`,
+        {
+          responseType: 'stream',
+          timeout: 60000,
+          headers: { ...(req.headers.range ? { Range: req.headers.range } : {}) },
+          validateStatus: () => true,
+        }
+      );
 
-    proxyReq.end();
+      const headersToRelay = ['content-type', 'content-length', 'content-range', 'accept-ranges', 'content-disposition'];
+      headersToRelay.forEach((h) => {
+        const v = upstream.headers[h];
+        if (v) res.setHeader(h, v as string);
+      });
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.status(upstream.status || 200);
+      upstream.data.pipe(res);
+    } catch (e: any) {
+      if (!res.headersSent) return res.status(502).json({ status: false, error: e.message });
+    }
   });
 
   console.log("✅ Moviebox Routes Registered (v3.7.1 - Multi-domain fallback):");
