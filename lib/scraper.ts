@@ -287,8 +287,26 @@ async function ytmp3Convert(videoId: string, format: "mp3" | "mp4"): Promise<{ d
 // PROVIDER CHAIN
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const mp3Providers: ConvertFn[] = [ytmp3Convert, ytdlpDirectUrl, flvtoConvert, fabdlConvert, invidiousConvert, cobaltConvert, pipedConvert, ytdlpFileConvert];
-const mp4Providers: ConvertFn[] = [ytmp3Convert, ytdlpDirectUrl, flvtoConvert, fabdlConvert, invidiousConvert, cobaltConvert, pipedConvert, ytdlpFileConvert];
+const mp3Providers: ConvertFn[] = [
+  flvtoConvert,       // 1.1s (Fastest)
+  ytmp3Convert,       // 14.9s
+  fabdlConvert,       // 1.4s (fails fast)
+  cobaltConvert,      // 2.5s (fails fast)
+  pipedConvert,       // 6.7s (fails fast)
+  ytdlpDirectUrl,     // 23.4s (slow but works)
+  ytdlpFileConvert,   // 15.5s (slow fallback)
+  invidiousConvert    // 20.1s (slowest, put last)
+];
+const mp4Providers: ConvertFn[] = [
+  flvtoConvert,
+  ytmp3Convert,
+  fabdlConvert,
+  cobaltConvert,
+  pipedConvert,
+  ytdlpDirectUrl,
+  ytdlpFileConvert,
+  invidiousConvert
+];
 
 export async function getDownloadInfo(url: string, format: "mp3" | "mp4" = "mp3") {
   const videoId = extractVideoId(url);
