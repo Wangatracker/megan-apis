@@ -134,7 +134,7 @@ export const DOER_TOOLS: Record<string, ToolDef> = {
     params: { url: "string (optional)", q: "string (optional)" },
     endpoint: "/download/mp3",
     method: "GET",
-    timeoutMs: 45000,
+    timeoutMs: 90000,
     build: (a) => ({ query: { url: a.url || "", q: a.q || a.query || "" } }),
     classify: (raw) => {
       const data = d(raw);
@@ -157,7 +157,7 @@ export const DOER_TOOLS: Record<string, ToolDef> = {
     params: { url: "string (optional)", q: "string (optional)" },
     endpoint: "/download/mp4",
     method: "GET",
-    timeoutMs: 45000,
+    timeoutMs: 90000,
     build: (a) => ({ query: { url: a.url || "", q: a.q || a.query || "" } }),
     classify: (raw) => {
       const data = d(raw);
