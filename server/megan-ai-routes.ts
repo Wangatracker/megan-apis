@@ -677,7 +677,7 @@ function sseSend(res: Response, event: any) {
 // Full "download a song" flow with live progress events.
 // Emits: status → song_found → status → download_ready → suggestion → done
 async function streamSongDownload(res: Response, query: string, uid: string) {
-  sseSend(res, { type: "status", text: `I'll get ${query} for you.` });
+  sseSend(res, { type: "status", text: `Searching for "${query}"...` });
 
   // 1. Search
   let searchResult: any = null;
@@ -697,23 +697,34 @@ async function streamSongDownload(res: Response, query: string, uid: string) {
     return sseSend(res, { type: "done" });
   }
 
-  // 2. Emit top 3 results (thumbnails for UI)
   const top = items[0];
+  const candidates = items.slice(0, 3).map((i: any) => ({
+    title: i.title,
+    thumbnail: i.thumbnail,
+    youtubeUrl: i.youtubeUrl,
+    id: i.id,
+  }));
+
+  // 2. Ask the LLM to generate a smart "Found it" message
+  let foundMsg = `Found "${top.title}". Starting download...`;
+  try {
+    const prompt = `The user asked to download "${query}". You found the top result: "${top.title}". Write a very short, excited 1-sentence reply telling them you found it and are downloading it now. Do not use emojis.`;
+    const aiText = await cfChat([{ role: "user", content: prompt }], undefined, 60);
+    if (aiText && aiText.trim().length > 2) foundMsg = aiText.trim();
+  } catch (e) {}
+
+  // 3. Emit GPT's message AND the top 3 results
   sseSend(res, {
     type: "song_found",
+    text: foundMsg,
     title: top.title,
     thumbnail: top.thumbnail,
     youtubeUrl: top.youtubeUrl,
     id: top.id,
-    candidates: items.slice(0, 3).map((i: any) => ({
-      title: i.title,
-      thumbnail: i.thumbnail,
-      youtubeUrl: i.youtubeUrl,
-      id: i.id,
-    })),
+    candidates: candidates,
   });
 
-  // 3. Kick off the mp3 conversion using the resolved URL
+  // 4. Kick off the mp3 conversion using the resolved URL
   sseSend(res, { type: "status", text: `Downloading "${top.title}" as MP3…` });
 
   let mp3Result: any = null;
