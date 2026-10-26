@@ -370,6 +370,20 @@ export const apiCategories: ApiCategory[] = [
         createdAt: "2026-02-01T11:00:00.000Z",
       },
       {
+        id: "animal-images",
+        name: "Animal Images",
+        description: "Random animal images (dog, cat, fox, lion, wolf and more), optionally by ID.",
+        categoryId: "fun",
+        createdAt: "2026-10-26T08:00:00.000Z",
+      },
+      {
+        id: "sfw-images",
+        name: "SFW Images",
+        description: "Safe-for-work images: coffee, food, holo and kanna.",
+        categoryId: "fun",
+        createdAt: "2026-10-26T08:00:00.000Z",
+      },
+      {
         id: "fun-data",
         name: "Fun Data",
         description: "Kenyan proverbs, Swahili phrases, dad jokes, affirmations, fortune cookies, and cultural content.",
@@ -608,6 +622,26 @@ export const apiCategories: ApiCategory[] = [
         categoryId: "sticker",
         createdAt: "2026-08-01T10:00:00.000Z",
       },
+    ],
+  },
+  {
+    id: "gaming",
+    name: "Games",
+    description: "Game server lookups for Minecraft, FiveM and Garry's Mod.",
+    icon: "Gamepad2",
+    createdAt: "2026-10-26T08:00:00.000Z",
+    subcategories: [
+      { id: "game-servers", name: "Game Servers", description: "Status, players and version for Minecraft, FiveM and Garry's Mod servers.", categoryId: "gaming", createdAt: "2026-10-26T08:00:00.000Z" },
+    ],
+  },
+  {
+    id: "adult",
+    name: "18+",
+    description: "Adult content endpoints. Requires adult=true. For adult-enabled applications only.",
+    icon: "ShieldAlert",
+    createdAt: "2026-10-26T08:00:00.000Z",
+    subcategories: [
+      { id: "adult-images", name: "NSFW Images", description: "Adult image categories from NIGHT API. Requires adult=true.", categoryId: "adult", createdAt: "2026-10-26T08:00:00.000Z" },
     ],
   },
   {
@@ -2382,6 +2416,42 @@ const reviewEndpoints: ApiEndpoint[] = [
   ], "json", "admin", "analytics", "v2", "2026-08-15T10:00:00.000Z", "D1", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
 ];
 
+const NIGHT_ANIMALS = ["dog","cat","fox","giraffe","kangaroo","lion","quokka","wolf","lezard","leopard","singes","paon","hamster"];
+const NIGHT_SFW = ["coffee","food","holo","kanna"];
+const NIGHT_NSFW = ["anal","ass","boobs","gonewild","hanal","hass","hboobs","hentai","hkitsune","hmidriff","hneko","hthigh","neko","paizuri","pgif","pussy","tentacle","thigh","yaoi"];
+const NIGHT_JOKES = ["global","dev","dark","limit","beauf","blondes"];
+
+const NIGHT_SUB_CAT: Record<string, string> = { "animal-images": "fun", "sfw-images": "fun", "jokes-quotes": "fun", "adult-images": "adult", "game-servers": "gaming", "management": "admin", "network-tools": "stalker", "qr-tools": "tools", "auth-tools": "tools" };
+
+const nP = (name: string, description: string, def: string, required = true, options?: string[], type = "string"): ApiParam =>
+  ({ name, type, required, description, default: def, options });
+
+const nE = (path: string, method: string, desc: string, params: ApiParam[], sub: string, rate = 60): ApiEndpoint =>
+  createEndpoint(path, method, desc, params, "json", NIGHT_SUB_CAT[sub], sub, "v2", "2026-10-26T08:00:00.000Z", "NIGHT API",
+    [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.BAD_GATEWAY, SC.SERVICE_UNAVAILABLE], rate);
+
+const nAdult = nP("adult", "Adult-content confirmation, must be 'true' (18+ only)", "true", true, ["true"]);
+
+const nightEndpoints: ApiEndpoint[] = [
+  nE("/api/v2/night", "GET", "NIGHT API info: supported categories and endpoints.", [], "management"),
+  nE("/api/v2/night/animals/:type", "GET", "Random image of the chosen animal.", [nP("type", "Animal type", "dog", true, NIGHT_ANIMALS)], "animal-images"),
+  nE("/api/v2/night/animals/:type/:id", "GET", "Specific animal image by numeric ID.", [nP("type", "Animal type", "cat", true, NIGHT_ANIMALS), nP("id", "Positive integer image ID", "5", true, undefined, "number")], "animal-images"),
+  nE("/api/v2/night/sfw", "GET", "Random safe-for-work image.", [], "sfw-images"),
+  nE("/api/v2/night/sfw/:type", "GET", "Random safe-for-work image from a category.", [nP("type", "SFW category", "holo", true, NIGHT_SFW)], "sfw-images"),
+  nE("/api/v2/night/nsfw", "GET", "Random adult (18+) image. Requires adult=true.", [nAdult], "adult-images", 30),
+  nE("/api/v2/night/nsfw/:type", "GET", "Random adult (18+) image from a category. Requires adult=true.", [nP("type", "NSFW category", "hentai", true, NIGHT_NSFW), nAdult], "adult-images", 30),
+  nE("/api/v2/night/jokes", "GET", "Random joke (French). Optionally exclude categories.", [nP("disallow", "Comma-separated categories to exclude", "dark,limit", false)], "jokes-quotes"),
+  nE("/api/v2/night/jokes/category/:type", "GET", "Random joke (French) from a category.", [nP("type", "Joke category", "dev", true, NIGHT_JOKES)], "jokes-quotes"),
+  nE("/api/v2/night/jokes/id/:id", "GET", "Specific joke (French) by ID, 1 to 900.", [nP("id", "Joke ID (1-900)", "44", true, undefined, "number")], "jokes-quotes"),
+  nE("/api/v2/night/games/minecraft/:host", "GET", "Minecraft server status, players and version.", [nP("host", "Server hostname or IP", "mc.example.com")], "game-servers", 30),
+  nE("/api/v2/night/games/fivem/:host", "GET", "FiveM server status and player info.", [nP("host", "Server hostname or IP", "play.example.com")], "game-servers", 30),
+  nE("/api/v2/night/games/garrysmod/:host", "GET", "Garry's Mod server status and player info.", [nP("host", "Server hostname or IP", "208.103.169.58")], "game-servers", 30),
+  nE("/api/v2/night/ipinfo/:ip", "GET", "Information about an IPv4 or IPv6 address.", [nP("ip", "IPv4 or IPv6 address", "8.8.8.8")], "network-tools"),
+  nE("/api/v2/night/qrcode", "GET", "Generate a QR code from text or a URL.", [nP("text", "Text or URL (max 2000 chars)", "https://example.com"), nP("size", "Size in pixels, 100 to 2000", "500", false, undefined, "number")], "qr-tools", 30),
+  nE("/api/v2/night/qrcode/reader", "POST", "Read a QR code from an image URL or image data.", [nP("image", "QR image URL or supported image data", "https://example.com/qrcode.png")], "qr-tools", 30),
+  nE("/api/v2/night/captcha", "GET", "Generate a CAPTCHA image and code.", [nP("size", "Code length, 4 to 10", "6", false, undefined, "number")], "auth-tools", 30),
+];
+
 export const allEndpoints: ApiEndpoint[] = [
   // Artificial Intelligence (40+ endpoints)
   ...aiChatV0Endpoints,
@@ -2475,6 +2545,7 @@ export const allEndpoints: ApiEndpoint[] = [
   ...meganAIEndpoints,
   ...reviewEndpoints,
   ...moviesEndpoints,
+  ...nightEndpoints,
 
 ];
 
