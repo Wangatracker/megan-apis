@@ -130,6 +130,8 @@ app.use((req, res, next) => {
 
   await registerRoutes(httpServer, app);
 
+  registerNightRoutes(app);
+
   // Transform all responses to new format (after routes so it intercepts them)
   app.use(responseTransformer);
 
