@@ -395,7 +395,7 @@ export const apiCategories: ApiCategory[] = [
   {
     id: "data",
     name: "Data & Information",
-    description: "Real-world data: news, crypto, forex, sports, education, jobs, zodiac, and reference information.",
+    description: "Real-world data: news, crypto, forex, education, jobs, zodiac, and reference information.",
     icon: "Database",
     createdAt: "2025-11-01T09:00:00.000Z",
     subcategories: [
@@ -421,48 +421,6 @@ export const apiCategories: ApiCategory[] = [
         createdAt: "2025-12-01T10:00:00.000Z",
       },
       {
-        id: "sports",
-        name: "Sports",
-        description: "Live matches with streams, scores, standings, teams, players, and World Cup data across 10 sports. Powered by WatchFooty, CDNLiveTV, Streamed.pk, and TheSportsDB.",
-        categoryId: "data",
-        createdAt: "2026-01-15T11:00:00.000Z",
-      },
-      {
-        id: "sports-matches",
-        name: "Live & Upcoming Matches",
-        description: "Live matches with real-time scores, streams, stats, and commentary. 700+ matches from multiple providers.",
-        categoryId: "data",
-        createdAt: "2026-10-01T10:00:00.000Z",
-      },
-      {
-        id: "sports-leagues",
-        name: "Leagues & Standings",
-        description: "League tables, fixtures, results, top scorers, and season data for EPL, LaLiga, Serie A, Bundesliga, and more.",
-        categoryId: "data",
-        createdAt: "2026-10-01T10:00:00.000Z",
-      },
-      {
-        id: "sports-teams",
-        name: "Teams & Players",
-        description: "Team profiles, squads, player stats, fixtures, and results across all leagues.",
-        categoryId: "data",
-        createdAt: "2026-10-01T10:00:00.000Z",
-      },
-      {
-        id: "sports-worldcup",
-        name: "FIFA World Cup",
-        description: "World Cup 2026 team profiles, superstar bios, fixtures, and tournament history.",
-        categoryId: "data",
-        createdAt: "2026-10-01T10:00:00.000Z",
-      },
-      {
-        id: "sports-providers",
-        name: "Providers & Status",
-        description: "Data provider health, capabilities, and worker status for the Megan Sports infrastructure.",
-        categoryId: "data",
-        createdAt: "2026-10-01T10:00:00.000Z",
-      },
-      {
         id: "education",
         name: "Education",
         description: "Academic papers, books, dictionary, and learning resources.",
@@ -482,6 +440,64 @@ export const apiCategories: ApiCategory[] = [
         description: "Zodiac signs, horoscopes, compatibility, and elements.",
         categoryId: "data",
         createdAt: "2025-11-25T09:00:00.000Z",
+      },
+    ],
+  },
+  {
+    id: "sports",
+    name: "Sports",
+    description: "Live matches and streams, scores, standings, teams, players, World Cup data, highlights, and sports news.",
+    icon: "Trophy",
+    createdAt: "2026-01-15T11:00:00.000Z",
+    subcategories: [
+      {
+        id: "sports",
+        name: "Sports",
+        description: "Live matches with streams, scores, standings, teams, players, and World Cup data across 10 sports. Powered by WatchFooty, CDNLiveTV, Streamed.pk, and TheSportsDB.",
+        categoryId: "sports",
+        createdAt: "2026-01-15T11:00:00.000Z",
+      },
+      {
+        id: "sports-matches",
+        name: "Live & Upcoming Matches",
+        description: "Live matches with real-time scores, streams, stats, and commentary. 700+ matches from multiple providers.",
+        categoryId: "sports",
+        createdAt: "2026-10-01T10:00:00.000Z",
+      },
+      {
+        id: "sports-leagues",
+        name: "Leagues & Standings",
+        description: "League tables, fixtures, results, top scorers, and season data for EPL, LaLiga, Serie A, Bundesliga, and more.",
+        categoryId: "sports",
+        createdAt: "2026-10-01T10:00:00.000Z",
+      },
+      {
+        id: "sports-teams",
+        name: "Teams & Players",
+        description: "Team profiles, squads, player stats, fixtures, and results across all leagues.",
+        categoryId: "sports",
+        createdAt: "2026-10-01T10:00:00.000Z",
+      },
+      {
+        id: "sports-worldcup",
+        name: "FIFA World Cup",
+        description: "World Cup 2026 team profiles, superstar bios, fixtures, and tournament history.",
+        categoryId: "sports",
+        createdAt: "2026-10-01T10:00:00.000Z",
+      },
+      {
+        id: "sports-providers",
+        name: "Providers & Status",
+        description: "Data provider health, capabilities, and worker status for the Megan Sports infrastructure.",
+        categoryId: "sports",
+        createdAt: "2026-10-01T10:00:00.000Z",
+      },
+      {
+        id: "sports-news",
+        name: "Sports News",
+        description: "Latest football and sports news articles, search, and single-article lookup.",
+        categoryId: "sports",
+        createdAt: "2026-10-26T08:00:00.000Z",
       },
     ],
   },
@@ -1013,7 +1029,7 @@ const musicStreamingEndpoints: ApiEndpoint[] = [
   createEndpoint("/api/bible/ai", "GET", "AI-powered Bible Q&A with 23 translations.", [
     { name: "q", type: "string", required: true, description: "Bible question", default: "What is love?" },
     { name: "translation", type: "string", required: false, description: "Translation code (default: ESV)", default: "ESV", options: BIBLE_TRANSLATIONS }
-  ], "json", "media-downloader", "music-streaming", "v0", "2025-12-01T10:00:00.000Z", "Bible AI", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  ], "json", "artificial-intelligence", "ai-specialized", "v0", "2025-12-01T10:00:00.000Z", "Bible AI", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
 ];
 
 
@@ -1148,7 +1164,7 @@ const textToolsEndpoints: ApiEndpoint[] = [
   createEndpoint("/api/tools/qrcode", "GET", "Generate QR code image from text or URL.", [
     { name: "text", type: "string", required: true, description: "Text or URL to encode", default: "https://apis.megan.qzz.io" },
     { name: "size", type: "number", required: false, description: "Size in pixels (default 300)", default: "300" }
-  ], "json", "tools", "text-tools", "v0", "2025-10-15T08:00:00.000Z", "QR Server", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  ], "json", "tools", "qr-tools", "v0", "2025-10-15T08:00:00.000Z", "QR Server", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
   createEndpoint("/api/tools/bible", "GET", "Lookup Bible verse by reference.", [{ name: "ref", type: "string", required: false, description: "Bible reference (e.g. john 3:16)", default: "john 3:16" }], "json", "tools", "text-tools", "v0", "2025-10-15T08:00:00.000Z", "Bible API", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
   createEndpoint("/api/tools/dictionary", "GET", "Get word definition, meanings, and pronunciation.", [{ name: "word", type: "string", required: true, description: "Word to look up", default: "serendipity" }], "json", "tools", "text-tools", "v0", "2025-10-16T09:00:00.000Z", "DictionaryAPI", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
   createEndpoint("/api/tools/wikipedia", "GET", "Get Wikipedia article summary and extract.", [{ name: "query", type: "string", required: true, description: "Topic to search", default: "Artificial intelligence" }], "json", "tools", "text-tools", "v0", "2025-10-16T09:00:00.000Z", "Wikipedia", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
@@ -1432,46 +1448,46 @@ const forexEndpoints: ApiEndpoint[] = [
 ];
 
 const sportsEndpoints: ApiEndpoint[] = [
-  createEndpoint("/api/sports/live", "GET", "Get live scores across all sports.", [{ name: "sport", type: "string", required: false, description: "Filter by sport (e.g. Soccer, Basketball)", default: "Soccer" }], "json", "data", "sports", "v0", "2026-01-15T11:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/search/team", "GET", "Search for a team by name.", [{ name: "q", type: "string", required: true, description: "Team name to search", default: "Arsenal" }], "json", "data", "sports", "v0", "2026-01-15T11:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/search/player", "GET", "Search for a player by name.", [{ name: "q", type: "string", required: true, description: "Player name to search", default: "Ronaldo" }], "json", "data", "sports", "v0", "2026-01-18T09:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/search/league", "GET", "Search for a league by name.", [{ name: "q", type: "string", required: true, description: "League name to search", default: "Premier League" }], "json", "data", "sports", "v0", "2026-01-18T09:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/leagues", "GET", "Get list of all leagues.", [], "json", "data", "sports", "v0", "2026-01-20T10:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/league/details", "GET", "Get league details by ID.", [{ name: "id", type: "string", required: true, description: "League ID", default: "4328" }], "json", "data", "sports", "v0", "2026-01-20T10:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/league/seasons", "GET", "Get all seasons for a league.", [{ name: "id", type: "string", required: true, description: "League ID", default: "4328" }], "json", "data", "sports", "v0", "2026-01-22T11:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/league/teams", "GET", "Get all teams in a league.", [{ name: "id", type: "string", required: true, description: "League ID", default: "4328" }], "json", "data", "sports", "v0", "2026-01-22T11:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/live", "GET", "Get live scores across all sports.", [{ name: "sport", type: "string", required: false, description: "Filter by sport (e.g. Soccer, Basketball)", default: "Soccer" }], "json", "sports", "sports", "v0", "2026-01-15T11:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/search/team", "GET", "Search for a team by name.", [{ name: "q", type: "string", required: true, description: "Team name to search", default: "Arsenal" }], "json", "sports", "sports", "v0", "2026-01-15T11:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/search/player", "GET", "Search for a player by name.", [{ name: "q", type: "string", required: true, description: "Player name to search", default: "Ronaldo" }], "json", "sports", "sports", "v0", "2026-01-18T09:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/search/league", "GET", "Search for a league by name.", [{ name: "q", type: "string", required: true, description: "League name to search", default: "Premier League" }], "json", "sports", "sports", "v0", "2026-01-18T09:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/leagues", "GET", "Get list of all leagues.", [], "json", "sports", "sports", "v0", "2026-01-20T10:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/league/details", "GET", "Get league details by ID.", [{ name: "id", type: "string", required: true, description: "League ID", default: "4328" }], "json", "sports", "sports", "v0", "2026-01-20T10:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/league/seasons", "GET", "Get all seasons for a league.", [{ name: "id", type: "string", required: true, description: "League ID", default: "4328" }], "json", "sports", "sports", "v0", "2026-01-22T11:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/league/teams", "GET", "Get all teams in a league.", [{ name: "id", type: "string", required: true, description: "League ID", default: "4328" }], "json", "sports", "sports", "v0", "2026-01-22T11:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
   createEndpoint("/api/sports/league/table", "GET", "Get league standings/table.", [
     { name: "id", type: "string", required: true, description: "League ID", default: "4328" },
     { name: "season", type: "string", required: true, description: "Season (e.g. 2024-2025)", default: "2024-2025" }
-  ], "json", "data", "sports", "v0", "2026-01-25T09:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/team/details", "GET", "Get team details by ID.", [{ name: "id", type: "string", required: true, description: "Team ID", default: "133604" }], "json", "data", "sports", "v0", "2026-01-25T09:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/team/players", "GET", "Get all players in a team.", [{ name: "id", type: "string", required: true, description: "Team ID", default: "133604" }], "json", "data", "sports", "v0", "2026-01-28T10:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/team/next", "GET", "Get next 5 upcoming events for a team.", [{ name: "id", type: "string", required: true, description: "Team ID", default: "133604" }], "json", "data", "sports", "v0", "2026-01-28T10:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/team/last", "GET", "Get last 5 results for a team.", [{ name: "id", type: "string", required: true, description: "Team ID", default: "133604" }], "json", "data", "sports", "v0", "2026-02-01T11:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/team/equipment", "GET", "Get team equipment/kits.", [{ name: "id", type: "string", required: true, description: "Team ID", default: "133604" }], "json", "data", "sports", "v0", "2026-02-01T11:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/player/details", "GET", "Get player details by ID.", [{ name: "id", type: "string", required: true, description: "Player ID", default: "34146280" }], "json", "data", "sports", "v0", "2026-02-05T09:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/event/details", "GET", "Get event/match details by ID.", [{ name: "id", type: "string", required: true, description: "Event ID", default: "652890" }], "json", "data", "sports", "v0", "2026-02-05T09:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/event/lineup", "GET", "Get event lineup.", [{ name: "id", type: "string", required: true, description: "Event ID", default: "652890" }], "json", "data", "sports", "v0", "2026-02-10T10:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/event/stats", "GET", "Get event statistics.", [{ name: "id", type: "string", required: true, description: "Event ID", default: "652890" }], "json", "data", "sports", "v0", "2026-02-10T10:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/event/highlights", "GET", "Get event highlights/video.", [{ name: "id", type: "string", required: true, description: "Event ID", default: "652890" }], "json", "data", "sports", "v0", "2026-02-15T11:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  ], "json", "sports", "sports", "v0", "2026-01-25T09:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/team/details", "GET", "Get team details by ID.", [{ name: "id", type: "string", required: true, description: "Team ID", default: "133604" }], "json", "sports", "sports", "v0", "2026-01-25T09:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/team/players", "GET", "Get all players in a team.", [{ name: "id", type: "string", required: true, description: "Team ID", default: "133604" }], "json", "sports", "sports", "v0", "2026-01-28T10:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/team/next", "GET", "Get next 5 upcoming events for a team.", [{ name: "id", type: "string", required: true, description: "Team ID", default: "133604" }], "json", "sports", "sports", "v0", "2026-01-28T10:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/team/last", "GET", "Get last 5 results for a team.", [{ name: "id", type: "string", required: true, description: "Team ID", default: "133604" }], "json", "sports", "sports", "v0", "2026-02-01T11:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/team/equipment", "GET", "Get team equipment/kits.", [{ name: "id", type: "string", required: true, description: "Team ID", default: "133604" }], "json", "sports", "sports", "v0", "2026-02-01T11:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/player/details", "GET", "Get player details by ID.", [{ name: "id", type: "string", required: true, description: "Player ID", default: "34146280" }], "json", "sports", "sports", "v0", "2026-02-05T09:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/event/details", "GET", "Get event/match details by ID.", [{ name: "id", type: "string", required: true, description: "Event ID", default: "652890" }], "json", "sports", "sports", "v0", "2026-02-05T09:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/event/lineup", "GET", "Get event lineup.", [{ name: "id", type: "string", required: true, description: "Event ID", default: "652890" }], "json", "sports", "sports", "v0", "2026-02-10T10:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/event/stats", "GET", "Get event statistics.", [{ name: "id", type: "string", required: true, description: "Event ID", default: "652890" }], "json", "sports", "sports", "v0", "2026-02-10T10:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/event/highlights", "GET", "Get event highlights/video.", [{ name: "id", type: "string", required: true, description: "Event ID", default: "652890" }], "json", "sports", "sports", "v0", "2026-02-15T11:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
   createEndpoint("/api/sports/events/day", "GET", "Get all events on a specific date.", [
     { name: "date", type: "string", required: true, description: "Date (YYYY-MM-DD)", default: "2024-03-15" },
     { name: "sport", type: "string", required: false, description: "Filter by sport", default: "Soccer" }
-  ], "json", "data", "sports", "v0", "2026-02-15T11:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  ], "json", "sports", "sports", "v0", "2026-02-15T11:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
   createEndpoint("/api/sports/events/round", "GET", "Get events by league round.", [
     { name: "id", type: "string", required: true, description: "League ID", default: "4328" },
     { name: "round", type: "string", required: true, description: "Round number", default: "30" },
     { name: "season", type: "string", required: true, description: "Season (e.g. 2024-2025)", default: "2024-2025" }
-  ], "json", "data", "sports", "v0", "2026-02-20T09:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  ], "json", "sports", "sports", "v0", "2026-02-20T09:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
   createEndpoint("/api/sports/teams/country", "GET", "Get teams by country.", [
     { name: "country", type: "string", required: true, description: "Country name", default: "England" },
     { name: "sport", type: "string", required: false, description: "Sport (default: Soccer)", default: "Soccer" }
-  ], "json", "data", "sports", "v0", "2026-02-20T09:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  ], "json", "sports", "sports", "v0", "2026-02-20T09:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
   createEndpoint("/api/sports/leagues/country", "GET", "Get leagues by country.", [
     { name: "country", type: "string", required: true, description: "Country name", default: "England" },
     { name: "sport", type: "string", required: false, description: "Filter by sport", default: "Soccer" }
-  ], "json", "data", "sports", "v0", "2026-02-25T10:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/venue", "GET", "Get venue details by ID.", [{ name: "id", type: "string", required: true, description: "Venue ID", default: "16247" }], "json", "data", "sports", "v0", "2026-02-25T10:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+  ], "json", "sports", "sports", "v0", "2026-02-25T10:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/venue", "GET", "Get venue details by ID.", [{ name: "id", type: "string", required: true, description: "Venue ID", default: "16247" }], "json", "sports", "sports", "v0", "2026-02-25T10:00:00.000Z", "TheSportsDB", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
 
   // ═══════════════════════════════════════════════════════════════
   // MEGAN SPORTS v2 — Live matches, streams, stats, multi-sport
@@ -1479,61 +1495,61 @@ const sportsEndpoints: ApiEndpoint[] = [
   // ═══════════════════════════════════════════════════════════════
 
   // ─── Matches (15) ───
-  createEndpoint("/api/sports/matches/live", "GET", "Get all live football matches with real-time scores and minute markers.", [], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/matches/live/football", "GET", "Live football matches only.", [], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/matches/live/basketball", "GET", "Live basketball matches (NBA).", [], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/matches/live/tennis", "GET", "Live tennis matches (ATP).", [], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/matches/live/nba", "GET", "Live NBA matches.", [], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/matches/live/nfl", "GET", "Live NFL matches.", [], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/matches/live/f1", "GET", "Live Formula 1 races.", [], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/matches/upcoming", "GET", "Upcoming matches in the next 24 hours across all providers.", [], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/matches/today", "GET", "All matches scheduled for today (UTC).", [], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/matches/tomorrow", "GET", "All matches scheduled for tomorrow (UTC).", [], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/matches", "GET", "Get ALL matches (live + upcoming + ended) merged from WatchFooty, CDNLiveTV, and Streamed.pk. ~700 matches right now.", [], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 30),
-  createEndpoint("/api/sports/matches/search", "GET", "Search matches by team name, league, or title.", [{ name: "q", type: "string", required: true, description: "Search query", default: "Arsenal" }], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/matches/league/:league", "GET", "Get all matches in a specific league.", [{ name: "league", type: "string", required: true, description: "League name (e.g. Premier League)", default: "Premier League" }], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/match/:id", "GET", "Get full details for a single match. IDs are prefixed: wf_ (WatchFooty), cdn_ (CDNLiveTV), str_ (Streamed.pk).", [{ name: "id", type: "string", required: true, description: "Prefixed match ID (e.g. wf_401927911)", default: "wf_401927911" }], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/match/:id/streams", "GET", "Get playable live stream URLs for a match (multiple servers, quality-tagged).", [{ name: "id", type: "string", required: true, description: "Prefixed match ID", default: "wf_401927911" }], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 30),
+  createEndpoint("/api/sports/matches/live", "GET", "Get all live football matches with real-time scores and minute markers.", [], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/matches/live/football", "GET", "Live football matches only.", [], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/matches/live/basketball", "GET", "Live basketball matches (NBA).", [], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/matches/live/tennis", "GET", "Live tennis matches (ATP).", [], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/matches/live/nba", "GET", "Live NBA matches.", [], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/matches/live/nfl", "GET", "Live NFL matches.", [], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/matches/live/f1", "GET", "Live Formula 1 races.", [], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/matches/upcoming", "GET", "Upcoming matches in the next 24 hours across all providers.", [], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/matches/today", "GET", "All matches scheduled for today (UTC).", [], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/matches/tomorrow", "GET", "All matches scheduled for tomorrow (UTC).", [], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/matches", "GET", "Get ALL matches (live + upcoming + ended) merged from WatchFooty, CDNLiveTV, and Streamed.pk. ~700 matches right now.", [], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 30),
+  createEndpoint("/api/sports/matches/search", "GET", "Search matches by team name, league, or title.", [{ name: "q", type: "string", required: true, description: "Search query", default: "Arsenal" }], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/matches/league/:league", "GET", "Get all matches in a specific league.", [{ name: "league", type: "string", required: true, description: "League name (e.g. Premier League)", default: "Premier League" }], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/match/:id", "GET", "Get full details for a single match. IDs are prefixed: wf_ (WatchFooty), cdn_ (CDNLiveTV), str_ (Streamed.pk).", [{ name: "id", type: "string", required: true, description: "Prefixed match ID (e.g. wf_401927911)", default: "wf_401927911" }], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/match/:id/streams", "GET", "Get playable live stream URLs for a match (multiple servers, quality-tagged).", [{ name: "id", type: "string", required: true, description: "Prefixed match ID", default: "wf_401927911" }], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 30),
 
   // ─── Leagues (6) ───
-  createEndpoint("/api/sports/v2/leagues", "GET", "Get all available leagues across all providers.", [], "json", "data", "sports-leagues", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/leagues/:id", "GET", "Get details of a league by ID.", [{ name: "id", type: "string", required: true, description: "League ID", default: "4663840386660596064" }], "json", "data", "sports-leagues", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/leagues/:id/standings", "GET", "Get the current standings/table for a league. Uses OpenLigaDB for Bundesliga, TheSportsDB for others.", [{ name: "id", type: "string", required: true, description: "League ID", default: "4663840386660596064" }], "json", "data", "sports-leagues", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
-  createEndpoint("/api/sports/v2/leagues/:id/fixtures", "GET", "Get upcoming fixtures for a league.", [{ name: "id", type: "string", required: true, description: "League ID", default: "4663840386660596064" }], "json", "data", "sports-leagues", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/leagues/:id/results", "GET", "Get past results for a league.", [{ name: "id", type: "string", required: true, description: "League ID", default: "4663840386660596064" }], "json", "data", "sports-leagues", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/match/:id/stats", "GET", "Get detailed match statistics (boxscore, rosters, commentary) — WatchFooty only.", [{ name: "id", type: "string", required: true, description: "WatchFooty match ID (wf_ prefix)", default: "wf_401927911" }], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/leagues", "GET", "Get all available leagues across all providers.", [], "json", "sports", "sports-leagues", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/leagues/:id", "GET", "Get details of a league by ID.", [{ name: "id", type: "string", required: true, description: "League ID", default: "4663840386660596064" }], "json", "sports", "sports-leagues", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/leagues/:id/standings", "GET", "Get the current standings/table for a league. Uses OpenLigaDB for Bundesliga, TheSportsDB for others.", [{ name: "id", type: "string", required: true, description: "League ID", default: "4663840386660596064" }], "json", "sports", "sports-leagues", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 30),
+  createEndpoint("/api/sports/v2/leagues/:id/fixtures", "GET", "Get upcoming fixtures for a league.", [{ name: "id", type: "string", required: true, description: "League ID", default: "4663840386660596064" }], "json", "sports", "sports-leagues", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/leagues/:id/results", "GET", "Get past results for a league.", [{ name: "id", type: "string", required: true, description: "League ID", default: "4663840386660596064" }], "json", "sports", "sports-leagues", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/match/:id/stats", "GET", "Get detailed match statistics (boxscore, rosters, commentary) — WatchFooty only.", [{ name: "id", type: "string", required: true, description: "WatchFooty match ID (wf_ prefix)", default: "wf_401927911" }], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
 
   // ─── Teams (4) ───
-  createEndpoint("/api/sports/v2/teams/:id", "GET", "Get team profile by ID (TheSportsDB).", [{ name: "id", type: "string", required: true, description: "Team ID", default: "133604" }], "json", "data", "sports-teams", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/teams/:id/squad", "GET", "Get the full squad for a team.", [{ name: "id", type: "string", required: true, description: "Team ID", default: "133604" }], "json", "data", "sports-teams", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/teams/search", "GET", "Search for a team by name.", [{ name: "q", type: "string", required: true, description: "Team name", default: "Arsenal" }], "json", "data", "sports-teams", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/teams/:id/fixtures", "GET", "Get upcoming fixtures for a team.", [{ name: "id", type: "string", required: true, description: "Team ID", default: "133604" }], "json", "data", "sports-teams", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/teams/:id", "GET", "Get team profile by ID (TheSportsDB).", [{ name: "id", type: "string", required: true, description: "Team ID", default: "133604" }], "json", "sports", "sports-teams", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/teams/:id/squad", "GET", "Get the full squad for a team.", [{ name: "id", type: "string", required: true, description: "Team ID", default: "133604" }], "json", "sports", "sports-teams", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/teams/search", "GET", "Search for a team by name.", [{ name: "q", type: "string", required: true, description: "Team name", default: "Arsenal" }], "json", "sports", "sports-teams", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/teams/:id/fixtures", "GET", "Get upcoming fixtures for a team.", [{ name: "id", type: "string", required: true, description: "Team ID", default: "133604" }], "json", "sports", "sports-teams", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
 
   // ─── World Cup (6) ───
-  createEndpoint("/api/sports/v2/worldcup/teams", "GET", "Get all 48 teams for the FIFA World Cup 2026 with cover images and history.", [], "json", "data", "sports-worldcup", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/worldcup/teams/:slug", "GET", "Get a specific World Cup team profile with full history.", [{ name: "slug", type: "string", required: true, description: "Team slug", default: "usa-team-profile-history" }], "json", "data", "sports-worldcup", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/worldcup/superstars", "GET", "Get 22 FIFA World Cup superstar player profiles (Messi, Ronaldo, Mbappé, etc).", [], "json", "data", "sports-worldcup", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/worldcup/superstars/:slug", "GET", "Get a specific superstar player profile.", [{ name: "slug", type: "string", required: true, description: "Player slug", default: "26-superstars-lionel-messi" }], "json", "data", "sports-worldcup", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/worldcup/fixtures", "GET", "Get upcoming World Cup fixtures.", [], "json", "data", "sports-worldcup", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/highlights", "GET", "Get recent match highlight MP4 videos with thumbnails.", [], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/worldcup/teams", "GET", "Get all 48 teams for the FIFA World Cup 2026 with cover images and history.", [], "json", "sports", "sports-worldcup", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/worldcup/teams/:slug", "GET", "Get a specific World Cup team profile with full history.", [{ name: "slug", type: "string", required: true, description: "Team slug", default: "usa-team-profile-history" }], "json", "sports", "sports-worldcup", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/worldcup/superstars", "GET", "Get 22 FIFA World Cup superstar player profiles (Messi, Ronaldo, Mbappé, etc).", [], "json", "sports", "sports-worldcup", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/worldcup/superstars/:slug", "GET", "Get a specific superstar player profile.", [{ name: "slug", type: "string", required: true, description: "Player slug", default: "26-superstars-lionel-messi" }], "json", "sports", "sports-worldcup", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/worldcup/fixtures", "GET", "Get upcoming World Cup fixtures.", [], "json", "sports", "sports-worldcup", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/highlights", "GET", "Get recent match highlight MP4 videos with thumbnails.", [], "json", "sports", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
 
   // ─── News (3) ───
-  createEndpoint("/api/sports/v2/news", "GET", "Get latest football news articles from Tuko, BBC, and other sources.", [], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/news/search", "GET", "Search football news articles.", [{ name: "q", type: "string", required: true, description: "Search query", default: "Arsenal" }], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/news/:id", "GET", "Get a single news article by ID.", [{ name: "id", type: "string", required: true, description: "Article ID", default: "5218710438225107352" }], "json", "data", "sports-matches", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/news", "GET", "Get latest football news articles from Tuko, BBC, and other sources.", [], "json", "sports", "sports-news", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/news/search", "GET", "Search football news articles.", [{ name: "q", type: "string", required: true, description: "Search query", default: "Arsenal" }], "json", "sports", "sports-news", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/news/:id", "GET", "Get a single news article by ID.", [{ name: "id", type: "string", required: true, description: "Article ID", default: "5218710438225107352" }], "json", "sports", "sports-news", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
 
   // ─── Sports Catalog (11) ───
-  createEndpoint("/api/sports/v2/sports", "GET", "List all supported sports (football, basketball, tennis, cricket, NBA, NFL, F1, MLB, NHL, rugby).", [], "json", "data", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/sports/football", "GET", "Football overview: live matches, upcoming, providers.", [], "json", "data", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/sports/basketball", "GET", "Basketball overview (NBA).", [], "json", "data", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/sports/tennis", "GET", "Tennis overview (ATP).", [], "json", "data", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/sports/cricket", "GET", "Cricket overview (IPL).", [], "json", "data", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/sports/f1", "GET", "Formula 1 overview.", [], "json", "data", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/sports/rugby", "GET", "Rugby NRL overview.", [], "json", "data", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/sports/nba", "GET", "NBA-specific overview.", [], "json", "data", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/sports/nfl", "GET", "NFL-specific overview.", [], "json", "data", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/providers", "GET", "List all sports data providers with status and capabilities.", [], "json", "data", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-  createEndpoint("/api/sports/v2/status", "GET", "Worker health check with cache and provider status.", [], "json", "data", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/sports", "GET", "List all supported sports (football, basketball, tennis, cricket, NBA, NFL, F1, MLB, NHL, rugby).", [], "json", "sports", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/sports/football", "GET", "Football overview: live matches, upcoming, providers.", [], "json", "sports", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/sports/basketball", "GET", "Basketball overview (NBA).", [], "json", "sports", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/sports/tennis", "GET", "Tennis overview (ATP).", [], "json", "sports", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/sports/cricket", "GET", "Cricket overview (IPL).", [], "json", "sports", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/sports/f1", "GET", "Formula 1 overview.", [], "json", "sports", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/sports/rugby", "GET", "Rugby NRL overview.", [], "json", "sports", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/sports/nba", "GET", "NBA-specific overview.", [], "json", "sports", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/sports/nfl", "GET", "NFL-specific overview.", [], "json", "sports", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/providers", "GET", "List all sports data providers with status and capabilities.", [], "json", "sports", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/sports/v2/status", "GET", "Worker health check with cache and provider status.", [], "json", "sports", "sports-providers", "v2", "2026-10-01T10:00:00.000Z", "Megan Sports", [SC.SUCCESS, SC.SERVER_ERROR], 60),
 ];
 
 const educationEndpoints: ApiEndpoint[] = [
@@ -2431,6 +2447,7 @@ const nE = (path: string, method: string, desc: string, params: ApiParam[], sub:
     [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.BAD_GATEWAY, SC.SERVICE_UNAVAILABLE], rate);
 
 const nAdult = nP("adult", "Adult-content confirmation, must be 'true' (18+ only)", "true", true, ["true"]);
+const nLang = nP("lang", "Language: en (default, translated by Megan AI) or fr (original)", "en", false, ["en", "fr"]);
 
 const nightEndpoints: ApiEndpoint[] = [
   nE("/api/v2/night", "GET", "NIGHT API info: supported categories and endpoints.", [], "management"),
@@ -2440,9 +2457,9 @@ const nightEndpoints: ApiEndpoint[] = [
   nE("/api/v2/night/sfw/:type", "GET", "Random safe-for-work image from a category.", [nP("type", "SFW category", "holo", true, NIGHT_SFW)], "sfw-images"),
   nE("/api/v2/night/nsfw", "GET", "Random adult (18+) image. Requires adult=true.", [nAdult], "adult-images", 30),
   nE("/api/v2/night/nsfw/:type", "GET", "Random adult (18+) image from a category. Requires adult=true.", [nP("type", "NSFW category", "hentai", true, NIGHT_NSFW), nAdult], "adult-images", 30),
-  nE("/api/v2/night/jokes", "GET", "Random joke (French). Optionally exclude categories.", [nP("disallow", "Comma-separated categories to exclude", "dark,limit", false)], "jokes-quotes"),
-  nE("/api/v2/night/jokes/category/:type", "GET", "Random joke (French) from a category.", [nP("type", "Joke category", "dev", true, NIGHT_JOKES)], "jokes-quotes"),
-  nE("/api/v2/night/jokes/id/:id", "GET", "Specific joke (French) by ID, 1 to 900.", [nP("id", "Joke ID (1-900)", "44", true, undefined, "number")], "jokes-quotes"),
+  nE("/api/v2/night/jokes", "GET", "Random joke. English by default (translated by Megan AI) or French with lang=fr. Optionally exclude categories.", [nP("disallow", "Comma-separated categories to exclude", "dark,limit", false), nLang], "jokes-quotes"),
+  nE("/api/v2/night/jokes/:type", "GET", "Random joke from a category. English by default (translated by Megan AI) or French with lang=fr.", [nP("type", "Joke category", "dev", true, NIGHT_JOKES), nLang], "jokes-quotes"),
+  nE("/api/v2/night/jokes/id/:id", "GET", "Specific joke by ID, 1 to 900. English by default (translated by Megan AI) or French with lang=fr.", [nP("id", "Joke ID (1-900)", "44", true, undefined, "number"), nLang], "jokes-quotes"),
   nE("/api/v2/night/games/minecraft/:host", "GET", "Minecraft server status, players and version.", [nP("host", "Server hostname or IP", "mc.example.com")], "game-servers", 30),
   nE("/api/v2/night/games/fivem/:host", "GET", "FiveM server status and player info.", [nP("host", "Server hostname or IP", "play.example.com")], "game-servers", 30),
   nE("/api/v2/night/games/garrysmod/:host", "GET", "Garry's Mod server status and player info.", [nP("host", "Server hostname or IP", "208.103.169.58")], "game-servers", 30),
