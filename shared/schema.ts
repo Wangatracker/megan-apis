@@ -2469,6 +2469,10 @@ const nightEndpoints: ApiEndpoint[] = [
   nE("/api/v2/night/captcha", "GET", "Generate a CAPTCHA image and code.", [nP("size", "Code length, 4 to 10", "6", false, undefined, "number")], "auth-tools", 30),
 ];
 
+const nightNsfwEndpoints: ApiEndpoint[] = NIGHT_NSFW.map((t) =>
+  nE(`/api/v2/night/nsfw/${t}`, "GET", `Random ${t} image (18+). Requires adult=true.`, [nAdult], "adult-images", 30)
+);
+
 export const allEndpoints: ApiEndpoint[] = [
   // Artificial Intelligence (40+ endpoints)
   ...aiChatV0Endpoints,
@@ -2563,6 +2567,7 @@ export const allEndpoints: ApiEndpoint[] = [
   ...reviewEndpoints,
   ...moviesEndpoints,
   ...nightEndpoints,
+  ...nightNsfwEndpoints,
 
 ];
 

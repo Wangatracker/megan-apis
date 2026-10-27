@@ -11,7 +11,7 @@ import axios from "axios";
 //
 // Translation provider:
 // POST https://apis.megan.qzz.io/api/ai/translate
-// API key: megan_admin_master
+// API key: set MEGAN_TRANSLATE_KEY
 // ============================================================
 
 const NIGHT_BASE = "https://api.night-api.com";
@@ -21,7 +21,7 @@ const NIGHT_TIMEOUT = 20000;
 const MEGAN_TRANSLATE_URL =
   "https://apis.megan.qzz.io/api/ai/translate";
 
-const MEGAN_TRANSLATE_KEY = "megan_admin_master";
+const MEGAN_TRANSLATE_KEY = process.env.MEGAN_TRANSLATE_KEY || "";
 
 const nightClient = axios.create({
   baseURL: NIGHT_BASE,
@@ -182,7 +182,7 @@ function sendNightData(
 // POST https://apis.megan.qzz.io/api/ai/translate
 //
 // Query:
-// ?api_key=megan_admin_master
+// ?api_key=set MEGAN_TRANSLATE_KEY
 //
 // JSON body:
 // {
