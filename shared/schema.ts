@@ -658,6 +658,8 @@ export const apiCategories: ApiCategory[] = [
     createdAt: "2026-10-26T08:00:00.000Z",
     subcategories: [
       { id: "adult-images", name: "NSFW Images", description: "Adult image categories from NIGHT API. Requires adult=true.", categoryId: "adult", createdAt: "2026-10-26T08:00:00.000Z" },
+      { id: "xvideos", name: "XVideos", description: "Public video search, metadata, stream and download resolution. Requires adult=true.", categoryId: "adult", createdAt: "2026-10-27T08:00:00.000Z" },
+      { id: "xnxx", name: "XNXX", description: "Public video search, metadata, stream and download resolution. Requires adult=true.", categoryId: "adult", createdAt: "2026-10-27T08:00:00.000Z" },
     ],
   },
   {
@@ -2473,6 +2475,82 @@ const nightNsfwEndpoints: ApiEndpoint[] = NIGHT_NSFW.map((t) =>
   nE(`/api/v2/night/nsfw/${t}`, "GET", `Random ${t} image (18+). Requires adult=true.`, [nAdult], "adult-images", 30)
 );
 
+// ─── ADULT VIDEO SOURCE ENDPOINTS ────────────────────────────────────────────
+const ADULT_VIDEO_CREATED_AT = "2026-10-27T08:00:00.000Z";
+
+const ADULT_VIDEO_CONFIRM: ApiParam = {
+  name: "adult",
+  type: "string",
+  required: true,
+  description: "Must be true to confirm access to adult content.",
+  default: "true",
+  options: ["true"],
+};
+
+const ADULT_VIDEO_QUERY: ApiParam = {
+  name: "q",
+  type: "string",
+  required: true,
+  description: "Video search query.",
+  default: "kenya",
+};
+
+const ADULT_VIDEO_URL: ApiParam = {
+  name: "url",
+  type: "string",
+  required: true,
+  description: "Full video page URL from the selected source.",
+  default: "https://example.com/video-page",
+};
+
+function createAdultVideoEndpoint(
+  source: "xnxx" | "xvideos",
+  action: "homepage" | "search" | "info" | "stream" | "download",
+): ApiEndpoint {
+  const sourceName = source === "xnxx" ? "XNXX" : "XVideos";
+
+  const descriptions: Record<
+    "homepage" | "search" | "info" | "stream" | "download",
+    string
+  > = {
+    homepage: `Browse public video metadata from ${sourceName}. Requires adult=true.`,
+    search: `Search public video metadata on ${sourceName}. Requires adult=true.`,
+    info: `Retrieve video-page metadata from ${sourceName}. Requires adult=true.`,
+    stream: `Resolve a supported stream URL from ${sourceName}. URLs may expire. Requires adult=true.`,
+    download: `Resolve a supported download URL from ${sourceName}. URLs may expire. Requires adult=true.`,
+  };
+
+  const params: ApiParam[] =
+    action === "homepage"
+      ? [ADULT_VIDEO_CONFIRM]
+      : action === "search"
+        ? [ADULT_VIDEO_QUERY, ADULT_VIDEO_CONFIRM]
+        : [ADULT_VIDEO_URL, ADULT_VIDEO_CONFIRM];
+
+  return createEndpoint(
+    `/api/v2/adult/${source}/${action}`,
+    "GET",
+    descriptions[action],
+    params,
+    "json",
+    "adult",
+    source,
+    "v2",
+    ADULT_VIDEO_CREATED_AT,
+    sourceName,
+    [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.BAD_GATEWAY, SC.SERVER_ERROR],
+    30,
+  );
+}
+
+const adultVideoEndpoints: ApiEndpoint[] = (
+  ["xnxx", "xvideos"] as const
+).flatMap((source) =>
+  (["homepage", "search", "info", "stream", "download"] as const).map(
+    (action) => createAdultVideoEndpoint(source, action),
+  ),
+);
+
 export const allEndpoints: ApiEndpoint[] = [
   // Artificial Intelligence (40+ endpoints)
   ...aiChatV0Endpoints,
@@ -2568,6 +2646,7 @@ export const allEndpoints: ApiEndpoint[] = [
   ...moviesEndpoints,
   ...nightEndpoints,
   ...nightNsfwEndpoints,
+  ...adultVideoEndpoints,
 
 ];
 
