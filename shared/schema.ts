@@ -2495,12 +2495,21 @@ const ADULT_VIDEO_QUERY: ApiParam = {
   default: "kenya",
 };
 
-const ADULT_VIDEO_URL: ApiParam = {
-  name: "url",
-  type: "string",
-  required: true,
-  description: "Full video page URL from the selected source.",
-  default: "https://example.com/video-page",
+const ADULT_VIDEO_URLS: Record<"xnxx" | "xvideos", ApiParam> = {
+  xnxx: {
+    name: "url",
+    type: "string",
+    required: true,
+    description: "Full XNXX video page URL.",
+    default: "https://www.xnxx.com/video-1fwaj5c0/the_most_beautiful_blonde_in_colombia_fucked_hard_",
+  },
+  xvideos: {
+    name: "url",
+    type: "string",
+    required: true,
+    description: "Full XVideos video page URL.",
+    default: "https://www.xvideos.com/video.omiiaic590f/57836530/0/sneaky_quiet_sex_with_sister_s_best_friend",
+  },
 };
 
 function createAdultVideoEndpoint(
@@ -2525,7 +2534,7 @@ function createAdultVideoEndpoint(
       ? [ADULT_VIDEO_CONFIRM]
       : action === "search"
         ? [ADULT_VIDEO_QUERY, ADULT_VIDEO_CONFIRM]
-        : [ADULT_VIDEO_URL, ADULT_VIDEO_CONFIRM];
+        : [ADULT_VIDEO_URLS[source], ADULT_VIDEO_CONFIRM];
 
   return createEndpoint(
     `/api/v2/adult/${source}/${action}`,
