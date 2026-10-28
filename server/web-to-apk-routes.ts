@@ -88,12 +88,29 @@ export function registerWebToApkRoutes(app: Express): void {
       builds.set(buildId, { id: buildId, url: url as string, appName: appName as string, packageId: packageId as string, createdAt: Date.now() });
       setTimeout(() => builds.delete(buildId), 60 * 60 * 1000);
 
-      // 4. Return the instant, honest response
+      // 4. Fetch the artifact URL directly
+      let githubArtifactUrl = null;
+      try {
+        // Wait a moment for the run to initialize
+        await new Promise(r => setTimeout(r, 1000));
+        const artRes = await fetch(`${GH_API}/repos/${GH_OWNER}/${GH_REPO}/actions/runs/${runId}/artifacts`, {
+          headers: { "Authorization": `Bearer ${GH_TOKEN}`, "Accept": "application/vnd.github+json" },
+        });
+        const artData: any = await artRes.json();
+        if (artData.artifacts && artData.artifacts.length > 0) {
+          githubArtifactUrl = artData.artifacts[0].archive_download_url;
+        }
+      } catch (e) {
+        console.log(`[apk] Could not fetch artifact URL yet.`);
+      }
+
+      // 4. Return the instant, honest response with the direct GitHub Artifact URL
       return res.json({
         success: true,
         status: "building",
         message: `Your app is being built. Please be patient, it takes about 5 minutes. You can track the progress here: ${runUrl}`,
-        downloadUrl: `https://apis.megan.qzz.io/api/tools/web-to-apk/download/${buildId}`,
+        // 👇 Direct GitHub URL (will be available once the build is done)
+        downloadUrl: githubArtifactUrl || `https://apis.megan.qzz.io/api/tools/web-to-apk/download/${buildId}`,
         github_actions_url: runUrl,
         app_details: {
           name: appName,
