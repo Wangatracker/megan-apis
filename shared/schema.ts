@@ -1785,6 +1785,39 @@ const webToApkEndpoints: ApiEndpoint[] = [
     [SC.SUCCESS, { code: 425, meaning: "Too Early - Build still in progress" }, SC.NOT_FOUND, SC.SERVER_ERROR], 20),
 ];
 
+const webToolsEndpoints: ApiEndpoint[] = [
+  createEndpoint("/api/tools/web-to-zip", "GET",
+    "Download any website as a ZIP file. Scrapes the HTML, CSS, JS, and images, and packages them into a single downloadable ZIP. Great for archiving, offline viewing, or inspecting site structure.",
+    [
+      { name: "url", type: "string", required: true, description: "The website URL to download", default: "https://example.com" },
+    ],
+    "zip", "tools", "developer-tools", "v2", "2026-10-28T10:00:00.000Z", "Megan Web2Zip",
+    [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 5),
+
+  createEndpoint("/api/tools/web-to-apk/build", "GET",
+    "Generate a real Android APK from any website URL. Runs on GitHub Actions (fast, no server load). Returns a buildId and a download URL. Wait 3-5 minutes, then use the download URL to get the APK.",
+    [
+      { name: "url", type: "string", required: true, description: "Website URL to wrap into an APK", default: "https://google.com" },
+      { name: "appName", type: "string", required: true, description: "Display name of the app", default: "MySearch" },
+      { name: "packageId", type: "string", required: true, description: "Android package ID (must be unique, e.g. com.megan.myapp)", default: "com.megan.search" },
+      { name: "logoText", type: "string", required: false, description: "1-2 letters shown in the app logo", default: "MS" },
+      { name: "logoColor", type: "string", required: false, description: "Logo accent color (hex)", default: "#4285F4" },
+      { name: "splashColor", type: "string", required: false, description: "Splash screen background color (hex)", default: "#000000" },
+      { name: "storage", type: "boolean", required: false, description: "Grant storage read/write permissions", default: "false", options: ["true", "false"] },
+      { name: "notifications", type: "boolean", required: false, description: "Grant notification permissions", default: "false", options: ["true", "false"] },
+    ],
+    "json", "tools", "developer-tools", "v2", "2026-10-28T10:00:00.000Z", "Megan APK Builder",
+    [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 5),
+
+  createEndpoint("/api/tools/web-to-apk/download/:buildId", "GET",
+    "Download the generated APK. Call this with the buildId from /build. Returns HTTP 425 if the build is still running; HTTP 200 with a .zip containing app-debug.apk once complete.",
+    [
+      { name: "buildId", type: "string", required: true, description: "buildId returned by /build endpoint", default: "" },
+    ],
+    "zip", "tools", "developer-tools", "v2", "2026-10-28T10:00:00.000Z", "Megan APK Builder",
+    [SC.SUCCESS, { code: 425, meaning: "Too Early - Build still in progress" }, SC.NOT_FOUND, SC.SERVER_ERROR], 20),
+];
+
 const adminEndpoints: ApiEndpoint[] = [
   createEndpoint("/api/admin/login", "POST", "Admin login with password.", [{ name: "password", type: "string", required: true, description: "Admin password" }], "json", "admin", "management", "v0", "2025-10-15T08:00:00.000Z", "Local", [SC.SUCCESS, SC.UNAUTHORIZED, SC.SERVER_ERROR], 5),
   createEndpoint("/api/admin/stats", "GET", "Get server request statistics - total, daily, top endpoints.", [], "json", "admin", "analytics", "v0", "2025-10-15T08:00:00.000Z", "Local", [SC.SUCCESS, SC.UNAUTHORIZED, SC.SERVER_ERROR], 30),
@@ -2667,6 +2700,7 @@ export const allEndpoints: ApiEndpoint[] = [
   
   // Admin
   ...adminEndpoints,
+  ...webToolsEndpoints,
   ...webToApkEndpoints,
   
   // Sticker
