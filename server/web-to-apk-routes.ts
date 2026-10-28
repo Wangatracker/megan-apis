@@ -105,11 +105,15 @@ export function registerWebToApkRoutes(app: Express): void {
       }
 
       // 4. Return the instant response with OUR download URL
+      // Get the API key that was used to make this request (to append to the download URL)
+      const apiKey = req.query.apikey || "";
+      const authParam = apiKey ? `?apikey=${apiKey}` : "";
+
       return res.json({
         success: true,
         status: "building",
-        message: `Your app is being built. It takes about 3-5 minutes. Wait a few minutes, then click the downloadUrl below.`,
-        downloadUrl: `https://apis.megan.qzz.io/api/tools/web-to-apk/download/${buildId}`,
+        instructions: "1. Wait 3-5 minutes. 2. Click the downloadUrl below. 3. It will download a ZIP file containing your APK.",
+        downloadUrl: `https://apis.megan.qzz.io/api/tools/web-to-apk/download/${buildId}${authParam}`,
         github_actions_url: runUrl,
         app_details: {
           name: appName,
