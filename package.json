@@ -4,7 +4,7 @@
   "type": "module",
   "license": "MIT",
   "author": "Tracker Wanga",
-  "description": "Free REST API hub \u2014 AI chat, social media downloads, image effects, OSINT tools, and more. Powered by Falcon Tech.",
+  "description": "Free REST API hub — AI chat, social media downloads, image effects, OSINT tools, and more. Powered by Falcon Tech.",
   "scripts": {
     "dev": "NODE_ENV=development node_modules/.bin/tsx server/index.ts",
     "build": "tsx script/build.ts",
@@ -12,9 +12,11 @@
     "postinstall": "node scripts/install-ytdlp.cjs"
   },
   "dependencies": {
+    "@types/archiver": "^8.0.0",
     "@vreden/youtube_scraper": "^1.2.9",
     "acorn": "^8.16.0",
     "acrcloud": "^1.4.0",
+    "archiver": "^8.0.0",
     "axios": "^1.19.0",
     "cheerio": "^1.2.0",
     "cors": "^2.8.5",
@@ -36,6 +38,8 @@
     "qs": "^6.16.1",
     "shazam-api": "^0.3.0",
     "uuid": "^10.0.0",
+    "web2zip": "^1.0.0",
+    "website-scraper": "^6.0.0",
     "ws": "^8.18.0",
     "youtube-dl-exec": "^3.1.12",
     "yt-search": "^2.13.1",

@@ -1,3 +1,4 @@
+import { registerWebToZipRoutes } from "./web-to-zip-routes";
 import { registerNightRoutes } from "./night-routes";
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
