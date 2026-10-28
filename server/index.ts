@@ -1,4 +1,7 @@
+import dns from "dns";
+dns.setDefaultResultOrder("ipv4first");
 import { registerWebToZipRoutes } from "./web-to-zip-routes";
+import { registerWebToApkRoutes } from "./web-to-apk-routes";
 import { registerNightRoutes } from "./night-routes";
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
@@ -135,6 +138,7 @@ app.use((req, res, next) => {
 
   registerNightRoutes(app);
   registerWebToZipRoutes(app);
+  registerWebToApkRoutes(app);
   registerAdultVideoRoutes(app);
 
   // Transform all responses to new format (after routes so it intercepts them)
