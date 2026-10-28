@@ -1776,10 +1776,10 @@ const webToApkEndpoints: ApiEndpoint[] = [
     "json", "tools", "developer-tools", "v2", "2026-10-28T10:00:00.000Z", "Megan APK Builder",
     [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 5),
 
-  createEndpoint("/api/tools/web-to-apk/download/:buildId", "GET",
-    "Download the generated APK. Call this with the buildId from /build. Returns HTTP 425 if the build is still running; HTTP 200 with a .zip containing app-debug.apk once complete.",
+  createEndpoint("/api/tools/web-to-apk/download/:runId", "GET",
+    "Download the generated APK. Use the numeric runId returned by /build. Returns HTTP 425 if the build is still running; HTTP 200 with the APK ZIP once complete. Survives server restarts (stateless).",
     [
-      { name: "buildId", type: "string", required: true, description: "buildId returned by /build endpoint", default: "" },
+      { name: "runId", type: "string", required: true, description: "Numeric run ID from the downloadUrl returned by /build", default: "" },
     ],
     "zip", "tools", "developer-tools", "v2", "2026-10-28T10:00:00.000Z", "Megan APK Builder",
     [SC.SUCCESS, { code: 425, meaning: "Too Early - Build still in progress" }, SC.NOT_FOUND, SC.SERVER_ERROR], 20),
@@ -1809,10 +1809,10 @@ const webToolsEndpoints: ApiEndpoint[] = [
     "json", "tools", "developer-tools", "v2", "2026-10-28T10:00:00.000Z", "Megan APK Builder",
     [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 5),
 
-  createEndpoint("/api/tools/web-to-apk/download/:buildId", "GET",
-    "Download the generated APK. Call this with the buildId from /build. Returns HTTP 425 if the build is still running; HTTP 200 with a .zip containing app-debug.apk once complete.",
+  createEndpoint("/api/tools/web-to-apk/download/:runId", "GET",
+    "Download the generated APK. Use the numeric runId returned by /build. Returns HTTP 425 if the build is still running; HTTP 200 with the APK ZIP once complete. Survives server restarts (stateless).",
     [
-      { name: "buildId", type: "string", required: true, description: "buildId returned by /build endpoint", default: "" },
+      { name: "runId", type: "string", required: true, description: "Numeric run ID from the downloadUrl returned by /build", default: "" },
     ],
     "zip", "tools", "developer-tools", "v2", "2026-10-28T10:00:00.000Z", "Megan APK Builder",
     [SC.SUCCESS, { code: 425, meaning: "Too Early - Build still in progress" }, SC.NOT_FOUND, SC.SERVER_ERROR], 20),

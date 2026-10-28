@@ -1,24 +1,14 @@
 import type { Express, Request, Response } from "express";
-import { randomUUID } from "crypto";
 import { Readable } from "stream";
 
 const GH_API = "https://api.github.com";
-
-interface BuildRecord {
-  id: string;
-  url: string;
-  appName: string;
-  packageId: string;
-  createdAt: number;
-}
-
-const builds = new Map<string, BuildRecord>();
 
 export function registerWebToApkRoutes(app: Express): void {
   const GH_TOKEN = process.env.GH_APK_TOKEN;
   const GH_OWNER = process.env.GH_APK_OWNER;
   const GH_REPO = process.env.GH_APK_REPO;
 
+  // ─── 1. TRIGGER BUILD ───
   app.get("/api/tools/web-to-apk/build", async (req: Request, res: Response) => {
     if (!GH_TOKEN || !GH_OWNER || !GH_REPO) {
       return res.status(500).json({ success: false, error: "APK builder not configured." });
@@ -39,11 +29,8 @@ export function registerWebToApkRoutes(app: Express): void {
       return res.status(400).json({ success: false, error: "Invalid packageId." });
     }
 
-    const buildId = randomUUID();
-    console.log(`[apk] Starting build ${buildId} for ${appName}`);
-
     try {
-      // 1. Trigger GitHub Action
+      // 1. Trigger the workflow
       const ghRes = await fetch(
         `${GH_API}/repos/${GH_OWNER}/${GH_REPO}/actions/workflows/build-apk.yml/dispatches`,
         {
@@ -51,6 +38,7 @@ export function registerWebToApkRoutes(app: Express): void {
           headers: {
             "Authorization": `Bearer ${GH_TOKEN}`,
             "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -74,46 +62,29 @@ export function registerWebToApkRoutes(app: Express): void {
         throw new Error(`GitHub HTTP ${ghRes.status}: ${errBody.substring(0, 300)}`);
       }
 
-      // 2. Wait 3 seconds for the run to appear
+      // 2. Wait 3 seconds for the run to be created
       await new Promise(r => setTimeout(r, 3000));
 
-      // 3. Get the run ID
+      // 3. Get the run ID (this is permanent and survives restarts)
       const runsRes = await fetch(`${GH_API}/repos/${GH_OWNER}/${GH_REPO}/actions/runs?per_page=1`, {
         headers: { "Authorization": `Bearer ${GH_TOKEN}`, "Accept": "application/vnd.github+json" },
       });
       const runsData: any = await runsRes.json();
-      const runId = runsData.workflow_runs?.[0]?.id;
-      const runUrl = runsData.workflow_runs?.[0]?.html_url;
+      const latestRun = runsData.workflow_runs?.[0];
 
-      builds.set(buildId, { id: buildId, url: url as string, appName: appName as string, packageId: packageId as string, createdAt: Date.now() });
-      setTimeout(() => builds.delete(buildId), 60 * 60 * 1000);
-
-      // 4. Fetch the artifact URL directly
-      let githubArtifactUrl = null;
-      try {
-        // Wait a moment for the run to initialize
-        await new Promise(r => setTimeout(r, 1000));
-        const artRes = await fetch(`${GH_API}/repos/${GH_OWNER}/${GH_REPO}/actions/runs/${runId}/artifacts`, {
-          headers: { "Authorization": `Bearer ${GH_TOKEN}`, "Accept": "application/vnd.github+json" },
-        });
-        const artData: any = await artRes.json();
-        if (artData.artifacts && artData.artifacts.length > 0) {
-          githubArtifactUrl = artData.artifacts[0].archive_download_url;
-        }
-      } catch (e) {
-        console.log(`[apk] Could not fetch artifact URL yet.`);
+      if (!latestRun) {
+        throw new Error("Could not find the triggered workflow run.");
       }
 
-      // 4. Return the instant response with OUR download URL
-      // Get the API key that was used to make this request (to append to the download URL)
-      const apiKey = req.query.apikey || "";
-      const authParam = apiKey ? `?apikey=${apiKey}` : "";
+      const runId = latestRun.id;
+      const runUrl = latestRun.html_url;
 
+      // 4. Return the STATELESS download URL using the runId
       return res.json({
         success: true,
         status: "building",
-        instructions: "1. Wait 3-5 minutes. 2. Click the downloadUrl below. 3. It will download a ZIP file containing your APK.",
-        downloadUrl: `https://apis.megan.qzz.io/api/tools/web-to-apk/download/${buildId}${authParam}`,
+        instructions: "1. Wait 3-5 minutes. 2. Open the downloadUrl below. 3. Append your API key: ?apikey=YOUR_KEY. 4. It downloads the APK ZIP.",
+        downloadUrl: `https://apis.megan.qzz.io/api/tools/web-to-apk/download/${runId}?apikey=YOUR_KEY`,
         github_actions_url: runUrl,
         app_details: {
           name: appName,
@@ -135,48 +106,89 @@ export function registerWebToApkRoutes(app: Express): void {
     }
   });
 
-  app.get("/api/tools/web-to-apk/download/:buildId", async (req: Request, res: Response) => {
-    const { buildId } = req.params;
-    const build = builds.get(buildId);
+  // ─── 2. STATELESS DOWNLOAD (uses GitHub runId, no memory needed) ───
+  app.get("/api/tools/web-to-apk/download/:runId", async (req: Request, res: Response) => {
+    const { runId } = req.params;
+    console.log(`[apk] Download requested for run ${runId}`);
 
-    if (!build) return res.status(404).send("Build link expired or invalid.");
+    if (!/^\d+$/.test(runId)) {
+      return res.status(400).json({ success: false, error: "Invalid runId. Must be a number." });
+    }
 
     try {
-      const runsRes = await fetch(`${GH_API}/repos/${GH_OWNER}/${GH_REPO}/actions/runs?per_page=1`, {
+      // 1. Check the run status on GitHub
+      const runRes = await fetch(`${GH_API}/repos/${GH_OWNER}/${GH_REPO}/actions/runs/${runId}`, {
         headers: { "Authorization": `Bearer ${GH_TOKEN}`, "Accept": "application/vnd.github+json" },
       });
-      const runsData: any = await runsRes.json();
-      const latestRun = runsData.workflow_runs?.[0];
+      
+      if (!runRes.ok) {
+        return res.status(404).json({ success: false, error: `Run ${runId} not found on GitHub.` });
+      }
+      
+      const runData: any = await runRes.json();
+      console.log(`[apk] Run ${runId}: status=${runData.status} conclusion=${runData.conclusion}`);
 
-      if (!latestRun || latestRun.status !== "completed" || latestRun.conclusion !== "success") {
-        return res.status(425).send("Build is still in progress. Please try again in a minute.");
+      if (runData.status !== "completed" || runData.conclusion !== "success") {
+        return res.status(425).json({
+          success: false,
+          error: "Build still in progress",
+          status: runData.status,
+          conclusion: runData.conclusion,
+          message: "Wait 2-3 minutes and try again.",
+          githubUrl: runData.html_url,
+        });
       }
 
-      const artRes = await fetch(`${GH_API}/repos/${GH_OWNER}/${GH_REPO}/actions/runs/${latestRun.id}/artifacts`, {
+      // 2. Get the artifact
+      const artRes = await fetch(`${GH_API}/repos/${GH_OWNER}/${GH_REPO}/actions/runs/${runId}/artifacts`, {
         headers: { "Authorization": `Bearer ${GH_TOKEN}`, "Accept": "application/vnd.github+json" },
       });
       const artData: any = await artRes.json();
       const artifact = artData.artifacts?.[0];
 
-      if (!artifact) return res.status(404).send("APK not found.");
+      if (!artifact) {
+        return res.status(404).json({ success: false, error: "APK artifact not found on this run." });
+      }
 
+      console.log(`[apk] Downloading artifact ${artifact.id} (${artifact.size_in_bytes} bytes)`);
+
+      // 3. Download the ZIP from GitHub
       const zipRes = await fetch(artifact.archive_download_url, {
-        headers: { "Authorization": `Bearer ${GH_TOKEN}`, "Accept": "application/vnd.github+json" },
+        headers: { 
+          "Authorization": `Bearer ${GH_TOKEN}`, 
+          "Accept": "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+        redirect: "follow",
       });
 
-      res.setHeader("Content-Type", "application/zip");
-      res.setHeader("Content-Disposition", `attachment; filename="${build.appName.replace(/[^a-z0-9]/gi, '_')}_apk.zip"`);
-      
-      if (zipRes.body) {
-        // @ts-ignore
-        Readable.fromWeb(zipRes.body).pipe(res);
-      } else {
-        res.send(Buffer.from(await zipRes.arrayBuffer()));
+      if (!zipRes.ok) {
+        return res.status(500).json({ success: false, error: `GitHub returned ${zipRes.status}` });
       }
+
+      const buf = Buffer.from(await zipRes.arrayBuffer());
+      const isZip = buf[0] === 0x50 && buf[1] === 0x4B;
+      
+      if (!isZip) {
+        console.error(`[apk] Not a ZIP! First bytes:`, buf.slice(0, 100).toString("utf-8"));
+        return res.status(500).json({ success: false, error: "GitHub returned non-ZIP content" });
+      }
+
+      // 4. Stream the ZIP to the user
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader("Content-Disposition", `attachment; filename="MeganApp_${runId}_apk.zip"`);
+      res.setHeader("Content-Length", buf.length.toString());
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      console.log(`[apk] ✅ Streaming ${buf.length} bytes`);
+      res.end(buf);
+
     } catch (err: any) {
-      return res.status(500).send("Failed to prepare download.");
+      console.error(`[apk] Error:`, err.message);
+      return res.status(500).json({ success: false, error: err.message });
     }
   });
 
-  console.log("✅ Web-to-APK Routes Registered (Honest API mode)");
+  console.log("✅ Web-to-APK Routes Registered (stateless runId-based):");
+  console.log("  GET /api/tools/web-to-apk/build?url=...");
+  console.log("  GET /api/tools/web-to-apk/download/:runId");
 }
