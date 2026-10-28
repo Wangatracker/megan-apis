@@ -104,13 +104,12 @@ export function registerWebToApkRoutes(app: Express): void {
         console.log(`[apk] Could not fetch artifact URL yet.`);
       }
 
-      // 4. Return the instant, honest response with the direct GitHub Artifact URL
+      // 4. Return the instant response with OUR download URL
       return res.json({
         success: true,
         status: "building",
-        message: `Your app is being built. Please be patient, it takes about 5 minutes. You can track the progress here: ${runUrl}`,
-        // 👇 Direct GitHub URL (will be available once the build is done)
-        downloadUrl: githubArtifactUrl || `https://apis.megan.qzz.io/api/tools/web-to-apk/download/${buildId}`,
+        message: `Your app is being built. It takes about 3-5 minutes. Wait a few minutes, then click the downloadUrl below.`,
+        downloadUrl: `https://apis.megan.qzz.io/api/tools/web-to-apk/download/${buildId}`,
         github_actions_url: runUrl,
         app_details: {
           name: appName,
