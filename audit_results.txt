@@ -1,0 +1,240 @@
+
+=================================================================
+OpenStax - https://openstax.org
+=================================================================
+Homepage HTTP: 200
+Final URL: https://openstax.org/
+
+/robots.txt: HTTP 200
+User-agent: *
+Disallow: /accounts
+Disallow: /admin
+Disallow: /l/
+Disallow: /r/
+Disallow: /confirmation/
+Disallow: /adoption-confirmation
+Disallow: /general
+Disallow: /contents
+Disallow: /extras
+Disallow: /errata
+Disallow: /resources
+Disallow: /apps/archive
+Disallow: /apps/archive-preview
+Disallow: /apps/cms/api/spike
+
+User-agent: GPTBot
+Disallow: /books/
+
+Sitemap: https://openstax.org/sitemap.xml
+Sitemap: https://openstax.org/rex/sitemaps/index.xml
+
+
+/sitemap.xml: HTTP 200
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<url><loc>https://openstax.org</loc><lastmod>2026-09-07</lastmod></url><url><loc>https://openstax.org/b2s-fall-24</loc><lastmod>2024-08-12</lastmod></url><url><loc>https://openstax.org/texes-core-social-studies</loc><lastmod>2025-05-14</lastmod></url><url><loc>https://openstax.org/tell-me-more</loc><lastmod>2025-01-10</lastmod></url><url><loc>https://openstax.org/nursing-interest</loc><lastmod>2025-01-29</lastmod></url><url><loc>https://openstax.org/we-teach-texas-oer-library</loc><lastmod>2025-05-13</lastmod></url><url><loc>https://openstax.org/texes-core-math</loc><lastmod>2025-05-14</lastmod></url><url><loc>https://openstax.org/texes-core-science
+
+Relevant public homepage links:
+
+=================================================================
+CK-12 - https://www.ck12.org
+=================================================================
+Homepage HTTP: 403
+Final URL: https://www.ck12.org/
+
+/robots.txt: HTTP 403
+
+/sitemap.xml: HTTP 403
+
+=================================================================
+MIT OpenCourseWare - https://ocw.mit.edu
+=================================================================
+Homepage HTTP: 200
+Final URL: https://ocw.mit.edu/
+
+/robots.txt: HTTP 200
+User-Agent: *
+Allow: /
+Sitemap: https://ocw.mit.edu/sitemap.xml
+
+
+/sitemap.xml: HTTP 200
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://ocw.mit.edu/sitemap-www.xml</loc>
+  </sitemap><sitemap>
+        <loc>https://ocw.mit.edu/courses/10-01-ethics-for-engineers-artificial-intelligence-spring-2020/sitemap.xml</loc>
+      </sitemap><sitemap>
+        <loc>https://ocw.mit.edu/courses/1-00-introduction-to-computers-and-engineering-problem-solving-spring-2012/sitemap.xml</loc>
+      </sitemap><sitemap>
+        <loc>https://ocw.mit.edu/courses/1-010-uncertainty-in-engineering-fall-2008/sitemap.xml</loc>
+      </sitemap><sitemap>
+        <loc>https://ocw.mit.edu/courses/1-011-project-evaluation-spring-2011/sitemap.xml</loc>
+      </sitemap><sitemap>
+        <loc>https://ocw.mit.edu/c
+
+Relevant public homepage links:
+- keyboard_arrow_left Previous: https://ocw.mit.edu/#featured-course-carousel-lg
+- Next keyboard_arrow_right: https://ocw.mit.edu/#featured-course-carousel-lg
+- : https://ocw.mit.edu/courses/res-16-002-how-to-cad-almost-anything-january-iap-2024/
+- How to CAD Almost Anything: https://ocw.mit.edu/courses/res-16-002-how-to-cad-almost-anything-january-iap-2024/
+- : https://ocw.mit.edu/courses/8-01sc-classical-mechanics-fall-2016/
+- Classical Mechanics: https://ocw.mit.edu/courses/8-01sc-classical-mechanics-fall-2016/
+- Science: https://ocw.mit.edu/search/?t=Science
+- Physics: https://ocw.mit.edu/search/?t=Physics
+- : https://ocw.mit.edu/courses/7-01sc-fundamentals-of-biology-fall-2011/
+- Fundamentals of Biology: https://ocw.mit.edu/courses/7-01sc-fundamentals-of-biology-fall-2011/
+
+=================================================================
+PhET - https://phet.colorado.edu
+=================================================================
+Homepage HTTP: 200
+Final URL: https://phet.colorado.edu/
+
+/robots.txt: HTTP 200
+# Identical on every environment. Non-production hosts are kept out of search results by an
+# X-Robots-Tag: noindex response header (cacheconfig/httpd/both/phet.ssl.include), never by disallowing
+# crawling here: a crawler that cannot fetch a page cannot see that it must not index it. /services/metadata/
+# stays crawlable for the same reason: Google's renderer needs it to build a simulation page.
+# https://app.shortcut.com/phetsims/story/3587
+User-agent: *
+Disallow: /*/unsubscribe
+Disallow: /deploy-html-simulation
+Disallow: /services/metadata/documentation
+Disallow: /*/services/metadata/documentation
+Disallow: /files/metadata/
+Disallow: /presets/
+Disallow: /*/studio/presets
+Disallow: /archive/
+
+
+/sitemap.xml: HTTP 404
+
+Relevant public homepage links:
+- : https://www.linkedin.com/company/phet-interactive-simulations/
+
+=================================================================
+OER Commons - https://www.oercommons.org
+=================================================================
+Homepage HTTP: 403
+Final URL: https://www.oercommons.org/
+
+/robots.txt: HTTP 403
+
+/sitemap.xml: HTTP 403
+
+=================================================================
+Khan Academy - https://www.khanacademy.org
+=================================================================
+Homepage HTTP: 200
+Final URL: https://www.khanacademy.org/
+
+/robots.txt: HTTP 200
+User-agent: GPTBot
+Disallow: /
+
+User-agent: *
+Sitemap: https://www.khanacademy.org/sitemap.xml
+Disallow: /_ah/
+Disallow: /admin/
+Disallow: /api/internal/_bb/
+Disallow: /crash
+Disallow: /devadmin/
+Disallow: /embed_video
+Disallow: /login?continue=*
+Disallow: /postlogin
+Disallow: /preview/
+Disallow: /search
+Disallow: /searchtest
+Disallow: /settings/linkaccount
+Disallow: /khan-labs?step=terms-and-conditions
+Disallow: /khan-labs?step=terms-and-conditions-redirect
+Disallow: /khan-labs?step=no-birthdate
+Disallow: /khan-labs?step=under-age-gate
+Disallow: /khan-labs?step=english-only
+Disallow: /khan-labs?step=us-only
+Disallow: /khan-labs?step=children-over-limit
+Disallow: /khan-labs?step=ineligible
+Disallow: /khanmigo/checkout?step=terms-and-conditions
+Disallow: /khanmigo/checkout?step=terms-and-co
+
+/sitemap.xml: HTTP 200
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    
+    <sitemap>
+        <loc>https://www.khanacademy.org/sitemaps/science/revision-up-science-class-6-full-term/sitemap.xml</loc>
+    </sitemap>
+    
+    <sitemap>
+        <loc>https://www.khanacademy.org/sitemaps/math/on-seventh-grade-math/sitemap.xml</loc>
+    </sitemap>
+    
+    <sitemap>
+        <loc>https://www.khanacademy.org/sitemaps/humanities/grammar/sitemap.xml</loc>
+    </sitemap>
+    
+    <sitemap>
+        <loc>https://www.khanacademy.org/sitemaps/science/strengthened-shs-earth-and-space-science-1/sitemap.xml</loc>
+    </sitemap>
+    
+    <sitemap>
+        <loc>https://www.khanacademy.org/sitemaps/kmap/applications-probability-c/sitemap.xml</loc>
+    </sitemap>
+    
+    
+
+Relevant public homepage links:
+
+=================================================================
+LibreTexts - https://libretexts.org
+=================================================================
+Homepage HTTP: 200
+Final URL: https://libretexts.org/
+
+/robots.txt: HTTP 200
+#
+# robots.txt
+#
+# This file is to prevent the crawling and indexing of certain parts
+# of your site by web crawlers and spiders run by sites like Yahoo!
+# and Google. By telling these "robots" where not to go on your site,
+# you save bandwidth and server resources.
+#
+# This file will be ignored unless it is at the root of your host:
+# Used:    http://example.com/robots.txt
+# Ignored: http://example.com/site/robots.txt
+#
+# For more information about the robots.txt standard, see:
+# http://www.robotstxt.org/robotstxt.html
+
+User-agent: *
+# CSS, JS, Images
+Allow: /core/*.css$
+Allow: /core/*.css?
+Allow: /core/*.js$
+Allow: /core/*.js?
+Allow: /core/*.gif
+Allow: /core/*.jpg
+Allow: /core/*.jpeg
+Allow: /core/*.png
+Allow: /core/*.svg
+Allow: /profiles/*.css$
+Allow: /profiles/*.css?
+Allow: /profiles/*.
+
+/sitemap.xml: HTTP 404
+
+Relevant public homepage links:
+- Biology: https://bio.libretexts.org/
+- Chemistry: https://chem.libretexts.org/
+- Geosciences: https://geo.libretexts.org/
+- Mathematics: https://math.libretexts.org/
+- Health Sciences: https://med.libretexts.org/
+- Physics: https://phys.libretexts.org/
+- Social Sciences: https://socialsci.libretexts.org/
+- VIEW TEXTBOOKS: https://commons.libretexts.org/
+- Textbook Libraries: https://libretexts.org/#accordion2-0
+
+Audit complete.
