@@ -14,77 +14,21 @@ interface BuildRecord {
 
 const builds = new Map<string, BuildRecord>();
 
-// Helper to wait for a build to finish
-async function waitForBuild(runId: number, maxWaitMs = 45000): Promise<{ success: boolean, artifactId?: number, htmlUrl: string }> {
-  const start = Date.now();
-  const GH_TOKEN = process.env.GH_APK_TOKEN;
-  const GH_OWNER = process.env.GH_APK_OWNER;
-  const GH_REPO = process.env.GH_APK_REPO;
-  
-  const headers = {
-    "Authorization": `Bearer ${GH_TOKEN}`,
-    "Accept": "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-  };
-
-  while (Date.now() - start < maxWaitMs) {
-    const res = await fetch(`${GH_API}/repos/${GH_OWNER}/${GH_REPO}/actions/runs/${runId}`, { headers });
-    const data: any = await res.json();
-
-    if (data.status === "completed") {
-      if (data.conclusion === "success") {
-        // Get the artifact
-        const artRes = await fetch(`${GH_API}/repos/${GH_OWNER}/${GH_REPO}/actions/runs/${runId}/artifacts`, { headers });
-        const artData: any = await artRes.json();
-        const artifact = artData.artifacts?.[0];
-        return { success: true, artifactId: artifact?.id, htmlUrl: data.html_url };
-      }
-      return { success: false, htmlUrl: data.html_url };
-    }
-
-    // Wait 3 seconds before checking again
-    await new Promise(r => setTimeout(r, 3000));
-  }
-
-  // Timeout reached
-  return { success: false, htmlUrl: `https://github.com/${GH_OWNER}/${GH_REPO}/actions/runs/${runId}` };
-}
-
-// Helper to stream the APK directly
-async function streamApk(res: Response, artifactId: number, appName: string) {
-  const GH_TOKEN = process.env.GH_APK_TOKEN;
-  const GH_OWNER = process.env.GH_APK_OWNER;
-  const GH_REPO = process.env.GH_APK_REPO;
-
-  const zipRes = await fetch(`${GH_API}/repos/${GH_OWNER}/${GH_REPO}/actions/artifacts/${artifactId}/zip`, {
-    headers: { "Authorization": `Bearer ${GH_TOKEN}`, "Accept": "application/vnd.github+json" },
-  });
-
-  if (!zipRes.ok) throw new Error("Failed to fetch artifact from GitHub");
-
-  res.setHeader("Content-Type", "application/zip");
-  res.setHeader("Content-Disposition", `attachment; filename="${appName.replace(/[^a-z0-9]/gi, '_')}_apk.zip"`);
-  
-  if (zipRes.body) {
-    // @ts-ignore
-    Readable.fromWeb(zipRes.body).pipe(res);
-  } else {
-    res.send(Buffer.from(await zipRes.arrayBuffer()));
-  }
-}
-
 export function registerWebToApkRoutes(app: Express): void {
   const GH_TOKEN = process.env.GH_APK_TOKEN;
   const GH_OWNER = process.env.GH_APK_OWNER;
   const GH_REPO = process.env.GH_APK_REPO;
 
-  // 1. Trigger build AND hold the request
   app.get("/api/tools/web-to-apk/build", async (req: Request, res: Response) => {
     if (!GH_TOKEN || !GH_OWNER || !GH_REPO) {
       return res.status(500).json({ success: false, error: "APK builder not configured." });
     }
 
-    const { url, appName, packageId, logoText = "M", logoColor = "#FF6B35", splashColor = "#111111" } = req.query;
+    const { 
+      url, appName, packageId, 
+      logoText = "M", logoColor = "#FF6B35", splashColor = "#111111",
+      storage = "false", notifications = "false"
+    } = req.query;
 
     if (!url || !appName || !packageId) {
       return res.status(400).json({ success: false, error: "Parameters required: url, appName, packageId" });
@@ -99,7 +43,7 @@ export function registerWebToApkRoutes(app: Express): void {
     console.log(`[apk] Starting build ${buildId} for ${appName}`);
 
     try {
-      // Trigger GitHub Action
+      // 1. Trigger GitHub Action
       const ghRes = await fetch(
         `${GH_API}/repos/${GH_OWNER}/${GH_REPO}/actions/workflows/build-apk.yml/dispatches`,
         {
@@ -111,53 +55,66 @@ export function registerWebToApkRoutes(app: Express): void {
           },
           body: JSON.stringify({
             ref: "main",
-            inputs: { website_url: url, app_name: appName, package_id: packageId, logo_text: logoText, logo_color: logoColor, splash_color: splashColor },
+            inputs: { 
+              website_url: url, 
+              app_name: appName, 
+              package_id: packageId, 
+              logo_text: logoText, 
+              logo_color: logoColor, 
+              splash_color: splashColor,
+              allow_storage: storage,
+              allow_notifications: notifications
+            },
           }),
         }
       );
 
-      if (ghRes.status !== 204) throw new Error(`GitHub dispatch failed: ${ghRes.status}`);
+      if (ghRes.status !== 204) {
+        const errBody = await ghRes.text();
+        throw new Error(`GitHub HTTP ${ghRes.status}: ${errBody.substring(0, 300)}`);
+      }
 
-      // Wait 2 seconds for GitHub to register the run
-      await new Promise(r => setTimeout(r, 2000));
+      // 2. Wait 3 seconds for the run to appear
+      await new Promise(r => setTimeout(r, 3000));
 
-      // Find the run ID that was just created
+      // 3. Get the run ID
       const runsRes = await fetch(`${GH_API}/repos/${GH_OWNER}/${GH_REPO}/actions/runs?per_page=1`, {
         headers: { "Authorization": `Bearer ${GH_TOKEN}`, "Accept": "application/vnd.github+json" },
       });
       const runsData: any = await runsRes.json();
       const runId = runsData.workflow_runs?.[0]?.id;
-
-      if (!runId) throw new Error("Could not find the triggered workflow run.");
+      const runUrl = runsData.workflow_runs?.[0]?.html_url;
 
       builds.set(buildId, { id: buildId, url: url as string, appName: appName as string, packageId: packageId as string, createdAt: Date.now() });
       setTimeout(() => builds.delete(buildId), 60 * 60 * 1000);
 
-      // 🟢 HOLD THE REQUEST: Wait up to 45 seconds for it to finish
-      console.log(`[apk] Waiting for build to complete (max 45s)...`);
-      const result = await waitForBuild(runId, 45000);
+      // 4. Return the instant, honest response
+      return res.json({
+        success: true,
+        status: "building",
+        message: `Your app is being built. Please be patient, it takes about 5 minutes. You can track the progress here: ${runUrl}`,
+        downloadUrl: `https://apis.megan.qzz.io/api/tools/web-to-apk/download/${buildId}`,
+        github_actions_url: runUrl,
+        app_details: {
+          name: appName,
+          package: packageId,
+          url: url,
+          logo_text: logoText,
+          logo_color: logoColor,
+          splash_color: splashColor,
+          permissions: {
+            storage: storage === "true",
+            notifications: notifications === "true"
+          }
+        }
+      });
 
-      if (result.success && result.artifactId) {
-        // It finished within 45 seconds! Send the APK directly.
-        console.log(`[apk] ✅ Build finished fast. Streaming APK...`);
-        return await streamApk(res, result.artifactId, appName as string);
-      } else {
-        // It took too long. Tell the user to wait.
-        console.log(`[apk] ⏳ Build still running. Returning 202 Accepted.`);
-        return res.status(202).json({
-          success: true,
-          status: "building",
-          message: "Your app is still building. It takes about 2-3 minutes. Click the download link in a moment.",
-          downloadUrl: `https://apis.megan.qzz.io/api/tools/web-to-apk/download/${buildId}`,
-        });
-      }
     } catch (err: any) {
       console.error(`[apk] ERROR:`, err.message);
-      return res.status(500).json({ success: false, error: "Failed to build APK", details: err.message });
+      return res.status(500).json({ success: false, error: "Failed to start APK build", details: err.message });
     }
   });
 
-  // 2. Fallback download URL (in case the 45s wait wasn't enough)
   app.get("/api/tools/web-to-apk/download/:buildId", async (req: Request, res: Response) => {
     const { buildId } = req.params;
     const build = builds.get(buildId);
@@ -183,11 +140,23 @@ export function registerWebToApkRoutes(app: Express): void {
 
       if (!artifact) return res.status(404).send("APK not found.");
 
-      return await streamApk(res, artifact.id, build.appName);
+      const zipRes = await fetch(artifact.archive_download_url, {
+        headers: { "Authorization": `Bearer ${GH_TOKEN}`, "Accept": "application/vnd.github+json" },
+      });
+
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader("Content-Disposition", `attachment; filename="${build.appName.replace(/[^a-z0-9]/gi, '_')}_apk.zip"`);
+      
+      if (zipRes.body) {
+        // @ts-ignore
+        Readable.fromWeb(zipRes.body).pipe(res);
+      } else {
+        res.send(Buffer.from(await zipRes.arrayBuffer()));
+      }
     } catch (err: any) {
       return res.status(500).send("Failed to prepare download.");
     }
   });
 
-  console.log("✅ Web-to-APK Routes Registered (Long Polling Enabled):");
+  console.log("✅ Web-to-APK Routes Registered (Honest API mode)");
 }
