@@ -5,3 +5,6 @@ dist/
 *.bak
 yt-dlp
 .env
+*.zip
+*.apk
+worker/.wrangler/

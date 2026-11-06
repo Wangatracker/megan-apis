@@ -1,6 +1,6 @@
 // ─── Megan APIs Gateway — API Routes Only ──────────────────────────────────
 
-const RENDER_URL = "https://megan-apis-33r1.onrender.com";
+const RENDER_URL = "https://vps.voltex.dpdns.org";
 const PAGES_URL = "https://master.megan-apis-frontend.pages.dev";
 const AUTH_URL = "https://auth.megan.qzz.io";
 
@@ -45,6 +45,12 @@ export default {
     if (method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
+
+    // ═══ BYPASS FOR MOVIE FILES (No API Key required) ═══
+    if (path.startsWith("/movies/")) {
+      return fetch(RENDER_URL + path + url.search, request);
+    }
+
 
     // ═══ AUTH ROUTES → Auth Worker ═══
     if (path.startsWith("/auth/") || path === "/login" || path === "/signup") {
