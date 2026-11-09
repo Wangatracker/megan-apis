@@ -27,6 +27,7 @@ import { registerAIImageRoutes } from "./ai-image-routes";
 import { registerV2Routes } from "./v2-routes";
 import { registerV2DownloadRoutes } from "./v2-download-routes";
 import { registerMovieboxRoutes } from "./moviebox-routes";
+import { registerScrapersRoutes } from "./scrapers-routes";
 import { registerImageProcessRoutes } from "./image-process-routes";
 import { registerSearchRoutesV2 } from "./search-routes-v2";
 import { registerStalkerRoutes } from "./stalker-routes";
@@ -160,6 +161,7 @@ export async function registerRoutes(
   registerV2Routes(app);
   registerV2DownloadRoutes(app);
   registerMovieboxRoutes(app);
+  registerScrapersRoutes(app);
   registerImageProcessRoutes(app);
   registerSearchRoutesV2(app);
   registerStalkerRoutes(app);
