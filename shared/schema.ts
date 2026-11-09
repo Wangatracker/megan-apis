@@ -270,16 +270,44 @@ export const apiCategories: ApiCategory[] = [
     createdAt: "2026-11-09T00:00:00.000Z",
     subcategories: [
       {
-        id: "torrents",
-        name: "Torrents",
-        description: "Search movie and anime torrents with magnet links. YTS (movies) and Nyaa (anime).",
+        id: "yts",
+        name: "YTS",
+        description: "Search and download movie torrents with magnet links. 720p/1080p/2160p BluRay and WEB-DL.",
         categoryId: "scrapers",
         createdAt: "2026-11-09T00:00:00.000Z",
       },
       {
-        id: "metadata",
-        name: "Metadata",
-        description: "Search Nollywood movies (Net9ja), music (iTunes, Deezer), and live sports odds (SportyBet).",
+        id: "nyaa",
+        name: "Nyaa",
+        description: "Search anime torrents with magnet links and seeders. English-subbed, non-English, and raw.",
+        categoryId: "scrapers",
+        createdAt: "2026-11-09T00:00:00.000Z",
+      },
+      {
+        id: "deezer",
+        name: "Deezer",
+        description: "Search Deezer music. Returns tracks, albums, and artists with 30-second preview URLs.",
+        categoryId: "scrapers",
+        createdAt: "2026-11-09T00:00:00.000Z",
+      },
+      {
+        id: "itunes",
+        name: "iTunes",
+        description: "Search iTunes music. Returns songs, albums, and artists with 30-second preview URLs and artwork.",
+        categoryId: "scrapers",
+        createdAt: "2026-11-09T00:00:00.000Z",
+      },
+      {
+        id: "net9ja",
+        name: "Net9ja",
+        description: "Search Net9ja Nollywood movies. Returns metadata, posters, IMDb/TMDB IDs, and SDM download links.",
+        categoryId: "scrapers",
+        createdAt: "2026-11-09T00:00:00.000Z",
+      },
+      {
+        id: "sportybet",
+        name: "SportyBet",
+        description: "Live and prematch sports odds from SportyBet. Supports 8 African regions.",
         categoryId: "scrapers",
         createdAt: "2026-11-09T00:00:00.000Z",
       },
@@ -2643,51 +2671,135 @@ const adultVideoEndpoints: ApiEndpoint[] = (
 
 // ─── SCRAPER ENDPOINTS ────────────────────────────────────────────────────
 const scraperEndpoints: ApiEndpoint[] = [
-  createEndpoint("/api/scrapers", "GET", "List all available scrapers (yts, nyaa, net9ja, itunes, deezer, sportybet) with descriptions and endpoint paths.", [], "json", "scrapers", "metadata", "v1", "2026-11-09T00:00:00.000Z", "Megan Scrapers", [SC.SUCCESS, SC.SERVER_ERROR], 60),
-
-  createEndpoint("/api/scrapers/yts", "GET", "Search and download YTS movie torrents. Returns movie metadata, posters, and magnet links.", [
-    { name: "action", type: "string", required: true, description: "latest, search, or movie", default: "search", options: ["latest", "search", "movie"] },
-    { name: "q", type: "string", required: false, description: "Search term (for action=search)", default: "matrix" },
-    { name: "id", type: "number", required: false, description: "Movie ID (for action=movie)", default: "59406" },
+  // ─── YTS ───
+  createEndpoint("/api/yts/search", "GET", "Search YTS movie torrents by keyword. Returns movie metadata, posters, and magnet links in 720p/1080p/2160p.", [
+    { name: "q", type: "string", required: true, description: "Search term", default: "matrix" },
     { name: "limit", type: "number", required: false, description: "Results per page (1-50)", default: "20" },
     { name: "page", type: "number", required: false, description: "Page number", default: "1" },
-  ], "json", "scrapers", "torrents", "v1", "2026-11-09T00:00:00.000Z", "YTS", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+    { name: "quality", type: "string", required: false, description: "720p, 1080p, 2160p, or 3D" },
+    { name: "genre", type: "string", required: false, description: "Genre filter (e.g. action)" },
+    { name: "rating", type: "number", required: false, description: "Minimum IMDb rating (0-9)" },
+    { name: "sort_by", type: "string", required: false, description: "relevance, year, rating, peers, seeds, download_count" },
+  ], "json", "scrapers", "yts", "v1", "2026-11-09T00:00:00.000Z", "YTS", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
 
-  createEndpoint("/api/scrapers/nyaa", "GET", "Search Nyaa anime torrents with magnet links, seeders, and file sizes.", [
-    { name: "action", type: "string", required: true, description: "latest or search", default: "search", options: ["latest", "search"] },
-    { name: "q", type: "string", required: false, description: "Search term (for action=search)", default: "naruto" },
-    { name: "category", type: "string", required: false, description: "1_2 = English-subbed, 1_3 = Non-English, 1_4 = Raw", default: "1_2", options: ["1_2", "1_3", "1_4"] },
-  ], "json", "scrapers", "torrents", "v1", "2026-11-09T00:00:00.000Z", "Nyaa", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
-
-  createEndpoint("/api/scrapers/net9ja", "GET", "Search Net9ja Nollywood movies with poster, description, IMDb/TMDB IDs, and SDM download links.", [
-    { name: "action", type: "string", required: true, description: "home, search, movies, series, categories, post, or resolve", default: "search", options: ["home", "search", "movies", "series", "categories", "post", "resolve"] },
-    { name: "q", type: "string", required: false, description: "Search term (for action=search)", default: "avengers" },
-    { name: "slug", type: "string", required: false, description: "Post slug (for action=post or resolve)", default: "the-odyssey-2026" },
-    { name: "limit", type: "number", required: false, description: "Results per page (1-50)", default: "10" },
+  createEndpoint("/api/yts/latest", "GET", "Get the latest YTS movie torrents, sorted by date added.", [
+    { name: "limit", type: "number", required: false, description: "Results per page (1-50)", default: "20" },
     { name: "page", type: "number", required: false, description: "Page number", default: "1" },
-  ], "json", "scrapers", "metadata", "v1", "2026-11-09T00:00:00.000Z", "Net9ja", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  ], "json", "scrapers", "yts", "v1", "2026-11-09T00:00:00.000Z", "YTS", [SC.SUCCESS, SC.SERVER_ERROR], 60),
 
-  createEndpoint("/api/scrapers/itunes", "GET", "Search iTunes music. Returns songs, albums, or artists with 30-second preview URLs and artwork.", [
-    { name: "action", type: "string", required: true, description: "search, albums, artists, song, album, or artist", default: "search", options: ["search", "albums", "artists", "song", "album", "artist"] },
-    { name: "q", type: "string", required: false, description: "Search term (for action=search/albums/artists)", default: "alone" },
-    { name: "id", type: "number", required: false, description: "iTunes ID (for action=song/album/artist)" },
+  createEndpoint("/api/yts/movie/:id", "GET", "Get full details for a single YTS movie, including all available torrents and magnet links.", [
+    { name: "id", type: "number", required: true, description: "YTS movie ID (from search results)", default: "59406" },
+  ], "json", "scrapers", "yts", "v1", "2026-11-09T00:00:00.000Z", "YTS", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+
+  // ─── NYAA ───
+  createEndpoint("/api/nyaa/search", "GET", "Search Nyaa anime torrents. Returns title, magnet link, seeders, leechers, size, and category.", [
+    { name: "q", type: "string", required: true, description: "Search term", default: "naruto" },
+    { name: "category", type: "string", required: false, description: "1_2 = English-subbed, 1_3 = Non-English, 1_4 = Raw", default: "1_2", options: ["1_2", "1_3", "1_4", "0_0"] },
+    { name: "filter", type: "string", required: false, description: "0 = all, 1 = no remakes, 2 = trusted only", default: "0", options: ["0", "1", "2"] },
+  ], "json", "scrapers", "nyaa", "v1", "2026-11-09T00:00:00.000Z", "Nyaa", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/nyaa/latest", "GET", "Get the latest Nyaa anime torrents by upload date.", [
+    { name: "category", type: "string", required: false, description: "1_2 = English-subbed, 1_3 = Non-English, 1_4 = Raw", default: "1_2" },
+  ], "json", "scrapers", "nyaa", "v1", "2026-11-09T00:00:00.000Z", "Nyaa", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  // ─── DEEZER ───
+  createEndpoint("/api/deezer/search", "GET", "Search Deezer music. Returns tracks with 30-second preview URLs, artist info, and album artwork.", [
+    { name: "q", type: "string", required: true, description: "Search term", default: "alone" },
+    { name: "limit", type: "number", required: false, description: "Results per page (1-100)", default: "10" },
+  ], "json", "scrapers", "deezer", "v1", "2026-11-09T00:00:00.000Z", "Deezer", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/deezer/track/:id", "GET", "Get full details for a Deezer track by ID, including 30-second preview URL.", [
+    { name: "id", type: "number", required: true, description: "Deezer track ID", default: "141822951" },
+  ], "json", "scrapers", "deezer", "v1", "2026-11-09T00:00:00.000Z", "Deezer", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/deezer/album/:id", "GET", "Get full album info with tracklist from Deezer.", [
+    { name: "id", type: "number", required: true, description: "Deezer album ID" },
+  ], "json", "scrapers", "deezer", "v1", "2026-11-09T00:00:00.000Z", "Deezer", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/deezer/artist/:id", "GET", "Get Deezer artist info and top 10 tracks.", [
+    { name: "id", type: "number", required: true, description: "Deezer artist ID" },
+  ], "json", "scrapers", "deezer", "v1", "2026-11-09T00:00:00.000Z", "Deezer", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/deezer/artist-search", "GET", "Search Deezer artists only (excludes tracks and albums).", [
+    { name: "q", type: "string", required: true, description: "Artist name", default: "burna boy" },
+    { name: "limit", type: "number", required: false, description: "Results per page (1-50)", default: "10" },
+  ], "json", "scrapers", "deezer", "v1", "2026-11-09T00:00:00.000Z", "Deezer", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+
+  // ─── ITUNES ───
+  createEndpoint("/api/itunes/search", "GET", "Search iTunes music. Returns songs with 30-second preview URLs, artwork, and Apple Music links.", [
+    { name: "q", type: "string", required: true, description: "Search term", default: "alone" },
     { name: "limit", type: "number", required: false, description: "Results per page (1-50)", default: "10" },
     { name: "country", type: "string", required: false, description: "iTunes country code", default: "US" },
-  ], "json", "scrapers", "metadata", "v1", "2026-11-09T00:00:00.000Z", "iTunes", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  ], "json", "scrapers", "itunes", "v1", "2026-11-09T00:00:00.000Z", "iTunes", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
 
-  createEndpoint("/api/scrapers/deezer", "GET", "Search Deezer music. Returns tracks, albums, and artists with 30-second preview URLs.", [
-    { name: "action", type: "string", required: true, description: "search, track, album, artist, artist-search, or album-search", default: "search", options: ["search", "track", "album", "artist", "artist-search", "album-search"] },
-    { name: "q", type: "string", required: false, description: "Search term (for action=search/artist-search/album-search)", default: "alone" },
-    { name: "id", type: "number", required: false, description: "Deezer ID (for action=track/album/artist)" },
-    { name: "limit", type: "number", required: false, description: "Results per page (1-100)", default: "10" },
-  ], "json", "scrapers", "metadata", "v1", "2026-11-09T00:00:00.000Z", "Deezer", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  createEndpoint("/api/itunes/albums", "GET", "Search iTunes albums only.", [
+    { name: "q", type: "string", required: true, description: "Album search term", default: "lover taylor swift" },
+    { name: "limit", type: "number", required: false, description: "Results per page (1-50)", default: "10" },
+    { name: "country", type: "string", required: false, description: "iTunes country code", default: "US" },
+  ], "json", "scrapers", "itunes", "v1", "2026-11-09T00:00:00.000Z", "iTunes", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
 
-  createEndpoint("/api/scrapers/sportybet", "GET", "Get live and prematch sports odds from SportyBet. Supports Nigeria, Ghana, Kenya, Tanzania, Zambia, Uganda, Cameroon, and South Africa.", [
-    { name: "action", type: "string", required: true, description: "sports, live, prematch, important, event, or redblack_info", default: "prematch", options: ["sports", "live", "prematch", "important", "event", "redblack_info"] },
+  createEndpoint("/api/itunes/artists", "GET", "Search iTunes artists only.", [
+    { name: "q", type: "string", required: true, description: "Artist name", default: "heart" },
+    { name: "limit", type: "number", required: false, description: "Results per page (1-50)", default: "10" },
+    { name: "country", type: "string", required: false, description: "iTunes country code", default: "US" },
+  ], "json", "scrapers", "itunes", "v1", "2026-11-09T00:00:00.000Z", "iTunes", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/itunes/song/:id", "GET", "Get full iTunes song details by iTunes ID.", [
+    { name: "id", type: "number", required: true, description: "iTunes track ID", default: "1110087159" },
+  ], "json", "scrapers", "itunes", "v1", "2026-11-09T00:00:00.000Z", "iTunes", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+
+  // ─── NET9JA ───
+  createEndpoint("/api/net9ja/home", "GET", "Get the latest Net9ja Nollywood posts with poster, description, and SDM download links.", [
+    { name: "limit", type: "number", required: false, description: "Results per page (1-50)", default: "10" },
+    { name: "page", type: "number", required: false, description: "Page number", default: "1" },
+  ], "json", "scrapers", "net9ja", "v1", "2026-11-09T00:00:00.000Z", "Net9ja", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/net9ja/search", "GET", "Search Net9ja Nollywood movies by keyword.", [
+    { name: "q", type: "string", required: true, description: "Search term", default: "avengers" },
+    { name: "limit", type: "number", required: false, description: "Results per page (1-50)", default: "10" },
+    { name: "page", type: "number", required: false, description: "Page number", default: "1" },
+  ], "json", "scrapers", "net9ja", "v1", "2026-11-09T00:00:00.000Z", "Net9ja", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/net9ja/movies", "GET", "Browse the Net9ja movies category.", [
+    { name: "limit", type: "number", required: false, description: "Results per page (1-50)", default: "10" },
+    { name: "page", type: "number", required: false, description: "Page number", default: "1" },
+  ], "json", "scrapers", "net9ja", "v1", "2026-11-09T00:00:00.000Z", "Net9ja", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/net9ja/series", "GET", "Browse the Net9ja TV series category.", [
+    { name: "limit", type: "number", required: false, description: "Results per page (1-50)", default: "10" },
+    { name: "page", type: "number", required: false, description: "Page number", default: "1" },
+  ], "json", "scrapers", "net9ja", "v1", "2026-11-09T00:00:00.000Z", "Net9ja", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/net9ja/post/:slug", "GET", "Get a single Net9ja post with poster, description, SDM URLs, and metadata.", [
+    { name: "slug", type: "string", required: true, description: "Post slug from listing", default: "the-odyssey-2026" },
+  ], "json", "scrapers", "net9ja", "v1", "2026-11-09T00:00:00.000Z", "Net9ja", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/net9ja/resolve/:slug", "GET", "Resolve a Net9ja post through SDM to find the final Wildshare download URL.", [
+    { name: "slug", type: "string", required: true, description: "Post slug from listing", default: "the-odyssey-2026" },
+  ], "json", "scrapers", "net9ja", "v1", "2026-11-09T00:00:00.000Z", "Net9ja", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.BAD_GATEWAY, SC.SERVER_ERROR], 60),
+
+  // ─── SPORTYBET ───
+  createEndpoint("/api/sportybet/sports", "GET", "List all sports available on SportyBet with event counts.", [
     { name: "region", type: "string", required: false, description: "Betting region", default: "ng", options: ["ng", "gh", "ke", "tz", "zm", "ug", "cm", "za"] },
+  ], "json", "scrapers", "sportybet", "v1", "2026-11-09T00:00:00.000Z", "SportyBet", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/sportybet/live", "GET", "Get live (in-play) sports matches with current scores and odds.", [
+    { name: "region", type: "string", required: false, description: "Betting region", default: "ng" },
     { name: "sportId", type: "string", required: false, description: "football, basketball, or tennis", default: "football" },
     { name: "limit", type: "number", required: false, description: "Events per page (1-50)", default: "20" },
-  ], "json", "scrapers", "metadata", "v1", "2026-11-09T00:00:00.000Z", "SportyBet", [SC.SUCCESS, SC.BAD_REQUEST, SC.SERVER_ERROR], 60),
+  ], "json", "scrapers", "sportybet", "v1", "2026-11-09T00:00:00.000Z", "SportyBet", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/sportybet/prematch", "GET", "Get upcoming (prematch) sports matches with odds.", [
+    { name: "region", type: "string", required: false, description: "Betting region", default: "ng" },
+    { name: "sportId", type: "string", required: false, description: "football, basketball, or tennis", default: "football" },
+    { name: "limit", type: "number", required: false, description: "Events per page (1-50)", default: "20" },
+  ], "json", "scrapers", "sportybet", "v1", "2026-11-09T00:00:00.000Z", "SportyBet", [SC.SUCCESS, SC.SERVER_ERROR], 60),
+
+  createEndpoint("/api/sportybet/event/:id", "GET", "Get detailed odds for a single SportyBet event by ID.", [
+    { name: "id", type: "string", required: true, description: "Event ID from /live or /prematch", default: "sr:match:73713580" },
+    { name: "region", type: "string", required: false, description: "Betting region", default: "ng" },
+    { name: "sportId", type: "string", required: false, description: "football, basketball, or tennis", default: "football" },
+  ], "json", "scrapers", "sportybet", "v1", "2026-11-09T00:00:00.000Z", "SportyBet", [SC.SUCCESS, SC.BAD_REQUEST, SC.NOT_FOUND, SC.SERVER_ERROR], 60),
 ];
 
 export const allEndpoints: ApiEndpoint[] = [
