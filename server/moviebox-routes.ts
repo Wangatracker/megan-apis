@@ -46,6 +46,27 @@ function randomDelay(min = 100, max = 500) {
   return new Promise(r => setTimeout(r, min + Math.random() * (max - min)));
 }
 
+
+// Retry helper for cold-start 502/503/timeout
+async function fetchWithRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
+  let lastErr: any;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await fn();
+    } catch (e: any) {
+      lastErr = e;
+      const isColdStart = e?.response?.status === 502 || e?.response?.status === 503 || e?.code === "ECONNABORTED";
+      if (isColdStart && i < retries) {
+        console.log(`[moviebox] Retry ${i + 1}/${retries} after cold start: ${e.message}`);
+        await new Promise((r) => setTimeout(r, 3000));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastErr;
+}
+
 class MovieboxClient {
   private token: string | null = null;
   private tokenExpiry: number = 0;
@@ -259,9 +280,11 @@ export function registerMovieboxRoutes(app: Express): void {
       if (quality) qs.set('quality', String(quality));
       if (format) qs.set('format', String(format));
 
-      const upstream = await axios.get(
-        `${PYTHON_STREAM_API}/api/stream/${subjectId}?${qs.toString()}`,
-        { timeout: 45000 }
+      const upstream = await fetchWithRetry(() =>
+        axios.get(
+          `${PYTHON_STREAM_API}/api/stream/${subjectId}?${qs.toString()}`,
+          { timeout: 90000 }
+        )
       );
 
       const host = req.headers.host || 'apis.megan.qzz.io';
